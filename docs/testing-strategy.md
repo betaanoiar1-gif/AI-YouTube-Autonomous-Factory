@@ -17,7 +17,9 @@
 2. **The real CleanAPIs connection is used only in a clearly separated
    integration test** (`tests/integration/test_cleanapis_connectivity.py`),
    marked `live`. The default test run excludes it (`-m "not live"`); it is
-   skipped unless `cleanapis_API_KEY` is set. Run it explicitly with
+   skipped unless `cleanapis_API_KEY` is set. It is reserved for a manual
+   **owner-run** with a real key — automated testing of the provider path
+   uses the simulated layer above instead. Run it explicitly with
    `pytest -m live tests/integration -v` or
    `python -m factory.cli cleanapis test-connection`.
 3. **No test asserts on real model output content** — the live test asserts
@@ -47,14 +49,15 @@ LLM cache (determinism, TTL, persistence, hit counting), budgets, health API
 ## Commands
 
 ```bash
-make test          # unit suite (live tests deselected)
-make test-live     # ONLY the live CleanAPIs connectivity test
-make lint          # ruff check
-make format        # ruff format
-make typecheck     # mypy factory tests
-make migrate       # alembic upgrade head
-make health        # CLI health check
-make connectivity  # CLI CleanAPIs connectivity test
+make test           # full automated suite (unit + simulated; live deselected)
+make test-simulated # ONLY the simulated/offline CleanAPIs integration tests
+make test-live      # ONLY the live CleanAPIs connectivity test (owner-run, needs a real key)
+make lint           # ruff check
+make format         # ruff format
+make typecheck      # mypy factory tests
+make migrate        # alembic upgrade head
+make health         # CLI health check
+make connectivity   # CLI CleanAPIs connectivity test (owner-run, needs a real key)
 ```
 
 ## Quality gates (all must pass)

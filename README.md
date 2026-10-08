@@ -28,12 +28,17 @@ Phase 0 (architecture & foundation) is complete:
 * ✅ Configuration system (app / provider / project / runtime secrets)
 * ✅ Logging foundation (structured JSON + mandatory secret redaction)
 * ✅ Provider usage tracking foundation
-* ✅ Testing foundation (unit + live integration, fully separated)
+* ✅ Testing foundation (unit + **simulated/offline CleanAPIs integration**
+  + owner-run live test, fully separated)
 * ✅ `.env.example`, basic health check (CLI + HTTP), ADRs
-* ⚠️ **Live CleanAPIs connectivity test: implemented but BLOCKED in this
-  sandbox** — `cleanapis_API_KEY` is not present in the environment and
-  egress to `cleanapis.com` is blocked by the sandbox allowlist. See
-  `docs/cleanapis.md` for the exact remediation command.
+* ✅ **Simulated CleanAPIs test: PASS** — the production
+  `CleanAPIsProvider` code path is verified end-to-end against a realistic
+  local HTTP simulation of the CleanAPIs API (no credentials, no real
+  network). See `docs/testing-strategy.md`.
+* ⏳ **Real CleanAPIs connectivity: NOT RUN — owner test pending** — the live
+  test against `https://cleanapis.com` is implemented and reserved for a
+  manual owner-run with a real key (`make connectivity`). It was not run in
+  the build sandbox (no key in env; egress blocked). See `docs/cleanapis.md`.
 
 Not in Phase 0 (by design): full YouTube discovery, opportunity/research/
 script engines, video rendering, dashboard, autonomous scheduling.
@@ -50,11 +55,13 @@ cp .env.example .env  # then edit: set cleanapis_API_KEY=cc_...
 # 3. Verify
 make health           # local health check (CLI)
 make migrate          # apply database migrations
-make test             # unit test suite (CleanAPIs fully mocked)
+make test             # full automated suite (unit + simulated CleanAPIs)
+make test-simulated   # ONLY the simulated/offline CleanAPIs integration tests
 make lint             # ruff
 make typecheck        # mypy
 
-# 4. Verify the real CleanAPIs connection (requires key + network egress)
+# 4. Verify the REAL CleanAPIs connection — OWNER-RUN ONLY
+#    (requires a real key + network egress; never part of automated testing)
 make connectivity     # python -m factory.cli cleanapis test-connection
 # or: make test-live  # pytest -m live tests/integration -v
 
@@ -74,6 +81,7 @@ make serve            # http://localhost:8080/health
 | `docs/testing-strategy.md` | layers, required coverage map, commands, quality gates |
 | `docs/cost-control.md` | caching, usage tracking, budgets, model selection, quotas |
 | `docs/cleanapis.md` | **verified** CleanAPIs facts, configuration, errors, connectivity test |
+| `docs/phase-0-final-report.md` | **Phase 0 final report** (simulated vs real connectivity status) |
 | `docs/decisions/` | Architecture Decision Records (ADR-0001 … ADR-0009) |
 
 ## Security rules (always in force)

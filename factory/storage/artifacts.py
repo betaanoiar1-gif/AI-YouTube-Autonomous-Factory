@@ -114,9 +114,9 @@ class ArtifactStore:
             session.add(row)
             session.flush()
 
-            data = json.dumps(
-                normalized, ensure_ascii=False, indent=2, sort_keys=True
-            ).encode("utf-8")
+            data = json.dumps(normalized, ensure_ascii=False, indent=2, sort_keys=True).encode(
+                "utf-8"
+            )
             target = validate_storage_ref(self._root, storage_ref)
             target.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = target.with_suffix(target.suffix + ".tmp")

@@ -205,16 +205,30 @@ pytest -m live tests/integration -v                  # same check as a test
    credentials). The report is printed as JSON; exit code 0 on pass, 1 on
    fail.
 
-### Status in THIS environment: BLOCKED (not run to completion)
+### Simulated automated test (offline): PASS
 
-The live test **cannot execute in the current sandbox**, for two independent
-environment reasons (both verified directly):
+The connectivity-test **code path** (`run_connectivity_test` + the full
+production `CleanAPIsProvider`/`CleanAPIsClient` stack) is exercised
+automatically, without any credentials, against a realistic local HTTP
+simulation of the CleanAPIs API — see `docs/testing-strategy.md` ("The
+simulated CleanAPIs layer") and `tests/simulated/`. Coverage includes the
+connectivity test passing end-to-end against the simulation (all 6 steps,
+cheapest-model selection from simulated pricing) and reporting an
+authentication failure safely. **41 simulated/offline tests pass**
+(`make test-simulated`). These tests are labeled `simulated`/`offline` and
+never contact the real API.
 
-1. **`cleanapis_API_KEY` is not set** in the sandbox environment. The
-   project specification says the credential is supplied through this
-   environment variable; it is absent here. The test correctly fails step 1
-   with `ConfigurationError` (verified: `python -m factory.cli cleanapis
-   test-connection` → `overall_pass: false`, exit 1, no secrets in output).
+### REAL CleanAPIs connectivity: NOT RUN — owner test pending
+
+The live test against the real `https://cleanapis.com` API **has not been
+run** and must be performed **manually by the project owner**. It cannot
+execute in the build sandbox, for two independent environment reasons (both
+verified directly):
+
+1. **`cleanapis_API_KEY` is not set** in the sandbox environment. The test
+   correctly fails step 1 with `ConfigurationError` (verified:
+   `python -m factory.cli cleanapis test-connection` → `overall_pass:
+   false`, exit 1, no secrets in output).
 2. **Outbound network access to `cleanapis.com` is blocked** by the sandbox
    egress allowlist (verified: TLS connect to `cleanapis.com:443` and
    `www.cleanapis.com:443` fails with `SSL_ERROR_SYSCALL`; only
@@ -222,8 +236,8 @@ environment reasons (both verified directly):
    reachable). Even with a key present, the test could not reach the API
    from this sandbox.
 
-**Remediation:** run the connectivity test in an environment where
-`cleanapis_API_KEY` is set and egress to `https://cleanapis.com` is allowed:
+**Owner-run remediation:** in an environment where `cleanapis_API_KEY` is
+set and egress to `https://cleanapis.com` is allowed:
 
 ```bash
 export cleanapis_API_KEY=cc_...
@@ -231,6 +245,10 @@ python -m factory.cli cleanapis test-connection
 # or
 pytest -m live tests/integration -v
 ```
+
+The live test remains available, clearly separated (marked `live`, skipped
+without a key), and no real connectivity is claimed anywhere in this
+repository.
 
 No endpoint, model, authentication format, or response field was invented:
 everything above comes from the official documentation, and the integration

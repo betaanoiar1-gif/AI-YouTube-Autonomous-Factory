@@ -37,7 +37,9 @@ include = ["factory*"]
 testpaths = ["tests"]
 addopts = '-m "not live" --strict-markers -q'
 markers = [
-    "live: tests that call the real CleanAPIs API (require cleanapis_API_KEY and network egress to https://cleanapis.com)",
+    "live: tests that call the REAL CleanAPIs API (require cleanapis_API_KEY and network egress to https://cleanapis.com); owner-run only",
+    "simulated: tests that run the production CleanAPIsProvider against a local simulated CleanAPIs HTTP service (offline, no credentials)",
+    "offline: tests that never touch the network beyond 127.0.0.1",
 ]
 
 [tool.ruff]

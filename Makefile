@@ -1,4 +1,4 @@
-.PHONY: setup lint format format-check typecheck test test-live migrate migrate-check health connectivity serve clean
+.PHONY: setup lint format format-check typecheck test test-simulated test-live migrate migrate-check health connectivity serve clean
 
 PY := .venv/bin/python
 
@@ -21,6 +21,9 @@ typecheck:
 
 test:
 	$(PY) -m pytest
+
+test-simulated:
+	$(PY) -m pytest -m simulated tests/simulated -v
 
 test-live:
 	$(PY) -m pytest -m live tests/integration -v
