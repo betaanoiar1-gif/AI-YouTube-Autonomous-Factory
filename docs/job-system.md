@@ -82,9 +82,18 @@ system as handlers (`IntelligencePipeline.handlers`):
 * `OPPORTUNITY_DETECTION` → `OpportunityEngine` — loads the analysis artifact
   + deterministic clustering → `opportunity_list` artifact.
 
+Phase 2 adds the research pipeline (`factory/research/pipeline.py`):
+
+* `RESEARCH` → `ResearchEngine` — loads the `opportunity_list` artifact and
+  runs 8 checkpointed stages (PLAN → SOURCE_DISCOVERY → SOURCE_COLLECTION →
+  EVIDENCE_EXTRACTION → CLAIM_BUILDING → VERIFICATION → CONTRADICTION_ANALYSIS
+  → REPORT) → `research_plan` + `research_report` artifacts. Every stage
+  checkpoints; a failed later stage never repeats completed earlier stages.
+
 Run a single stage or the whole chain from the CLI:
 `factory pipeline run --job-type youtube_discovery --project-id … --payload …`
-or `factory pipeline run-chain --project-id … --payload …`.
+or `factory pipeline run-chain --project-id … --payload …`. The CLI accepts
+`--job-type research` for the research job.
 
 ## Semantics
 

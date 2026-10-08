@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/source.schema.json",
+  "title": "SourceItem",
+  "description": "source contract: a discovered/collected source with quality indicators (metadata only).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "url",
+    "canonical_url",
+    "url_fingerprint",
+    "title",
+    "source_type",
+    "collection_status"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "url": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "canonical_url": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "url_fingerprint": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "publisher": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "published_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "source_type": {
+      "type": "string",
+      "maxLength": 32,
+      "default": "unknown"
+    },
+    "discovery_query": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "relevance_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0
+    },
+    "authority_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0
+    },
+    "authority_indicators": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "collection_status": {
+      "type": "string",
+      "maxLength": 32,
+      "default": "pending"
+    },
+    "collection_error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "collected_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "content_fingerprint": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "byte_size": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "content_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    }
+  }
+}

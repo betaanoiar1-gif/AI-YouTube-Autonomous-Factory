@@ -62,6 +62,11 @@ is the index. `factory/storage/artifacts.py::ArtifactStore` implements it.
 | `production_timeline` | production | tracks (video/audio/voice/music/subtitle/graphic) with clips |
 | `qa_report` | QA | per-category checks (factual/narrative/visual/audio/subtitle/technical), overall status |
 | `publish_package` | publishing | title + options, description, tags, category, language, thumbnail concept, schedule |
+| `research_plan` | research (Phase 2) | plan derived from an opportunity: central question, subquestions, required facts, source/verification requirements |
+| `source` | research (Phase 2) | a source with justified type/authority indicators, fingerprints, and collection status (metadata only) |
+| `evidence` | research (Phase 2) | an extracted fact with bounded passage, location, confidence, and structured subject/predicate/value |
+| `research_claim` | research (Phase 2) | a normalized claim with verification status and provenance |
+| `research_report` | research (Phase 2) | question, findings, verified/contested claims, evidence map, sources + quality, contradictions, confidence summary, limitations, lineage |
 
 ## API
 

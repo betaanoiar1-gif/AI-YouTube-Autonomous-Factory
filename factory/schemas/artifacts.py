@@ -48,6 +48,10 @@ class ArtifactType(StrEnum):
     DISCOVERY_RESULT = "discovery_result"
     ANALYSIS_RESULT = "analysis_result"
     OPPORTUNITY_LIST = "opportunity_list"
+    RESEARCH_PLAN = "research_plan"
+    SOURCE = "source"
+    EVIDENCE = "evidence"
+    RESEARCH_CLAIM = "research_claim"
     RESEARCH_REPORT = "research_report"
     CONTENT_BRIEF = "content_brief"
     SCRIPT = "script"
@@ -277,8 +281,138 @@ class Contradiction(ArtifactModel):
     claim_refs: list[str] = Field(default_factory=list)
 
 
+class ResearchSubquestion(ArtifactModel):
+    """A subquestion derived from the opportunity (Phase 2)."""
+
+    question: str = Field(min_length=1, max_length=500)
+    #: contextual | quantitative | disputed | historical | comparative
+    category: str = Field(default="contextual", max_length=32)
+    priority: int = Field(default=1, ge=1, le=5)
+
+
+class ResearchPlan(ArtifactModel):
+    """research plan artifact: a structured plan derived from an opportunity.
+
+    Generated from the opportunity's topic/question — never copied from
+    competitor titles or descriptions.
+    """
+
+    research_plan_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    opportunity_id: str = Field(min_length=1)
+    central_question: str = Field(min_length=1, max_length=500)
+    subquestions: list[ResearchSubquestion] = Field(default_factory=list)
+    required_facts: list[str] = Field(default_factory=list)
+    #: source types required (primary, academic, government, journalism, ...)
+    source_requirements: list[str] = Field(default_factory=list)
+    verification_requirements: list[str] = Field(default_factory=list)
+    depth: str = Field(default="standard", max_length=16)
+    language: str | None = Field(default=None, max_length=16)
+    target_audience: str | None = Field(default=None, max_length=256)
+    generated_at: datetime = Field(default_factory=_utcnow)
+
+
+class SourceItem(ArtifactModel):
+    """A discovered/collected source with quality indicators (Phase 2).
+
+    Metadata only — never full source content is stored in artifacts.
+    """
+
+    source_id: str = Field(min_length=1, max_length=64)
+    url: str = Field(min_length=1, max_length=2000)
+    canonical_url: str = Field(min_length=1, max_length=2000)
+    url_fingerprint: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=500)
+    publisher: str | None = Field(default=None, max_length=256)
+    published_at: datetime | None = None
+    #: primary | government | academic | journalism | reference | secondary | unknown
+    source_type: str = Field(default="unknown", max_length=32)
+    discovery_query: str | None = Field(default=None, max_length=500)
+    relevance_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    authority_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    authority_indicators: list[str] = Field(default_factory=list)
+    #: pending | collected | cached | failed
+    collection_status: str = Field(default="pending", max_length=32)
+    collection_error: str | None = Field(default=None, max_length=500)
+    collected_at: datetime | None = None
+    content_fingerprint: str | None = Field(default=None, max_length=64)
+    byte_size: int | None = Field(default=None, ge=0)
+    content_type: str | None = Field(default=None, max_length=128)
+
+
+class EvidenceItem(ArtifactModel):
+    """A structured piece of evidence extracted from a source (Phase 2)."""
+
+    evidence_id: str = Field(min_length=1, max_length=64)
+    source_id: str = Field(min_length=1, max_length=64)
+    #: The extracted claim/fact.
+    claim: str = Field(min_length=1, max_length=1000)
+    #: The supporting passage (bounded — no large source copies).
+    passage: str = Field(default="", max_length=2000)
+    location: str | None = Field(default=None, max_length=128)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    extracted_at: datetime = Field(default_factory=_utcnow)
+    #: Structured fields for contradiction detection (optional).
+    subject: str | None = Field(default=None, max_length=200)
+    predicate: str | None = Field(default=None, max_length=128)
+    value: str | None = Field(default=None, max_length=128)
+    #: number | date | text
+    value_type: str | None = Field(default=None, max_length=16)
+
+
+class VerifiedClaim(ArtifactModel):
+    """A normalized research claim with verification status (Phase 2).
+
+    Verification statuses: UNVERIFIED | SUPPORTED | MULTI_SOURCE_SUPPORTED |
+    CONTESTED | CONTRADICTED | INSUFFICIENT_EVIDENCE. Absence of evidence is
+    never treated as confirmation.
+    """
+
+    claim_id: str = Field(min_length=1, max_length=64)
+    statement: str = Field(min_length=1, max_length=1000)
+    #: fact | estimate | opinion | disputed
+    claim_type: str = Field(default="fact", max_length=32)
+    #: high | medium | low
+    importance: str = Field(default="medium", max_length=16)
+    evidence_refs: list[str] = Field(default_factory=list)
+    source_count: int = Field(default=0, ge=0)
+    supporting_source_ids: list[str] = Field(default_factory=list)
+    contradicting_source_ids: list[str] = Field(default_factory=list)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    verification_status: str = Field(default="UNVERIFIED", max_length=32)
+    independent_source_count: int = Field(default=0, ge=0)
+    notes: str | None = Field(default=None, max_length=1000)
+    subject: str | None = Field(default=None, max_length=200)
+    predicate: str | None = Field(default=None, max_length=128)
+    value: str | None = Field(default=None, max_length=128)
+    value_type: str | None = Field(default=None, max_length=16)
+
+
+class ContradictionDetail(ArtifactModel):
+    """A structured contradiction between sources (Phase 2). Both sides are
+    preserved — the system never silently chooses one."""
+
+    contradiction_id: str = Field(min_length=1, max_length=64)
+    #: number | date | identity | description | disagreement
+    contradiction_type: str = Field(min_length=1, max_length=32)
+    description: str = Field(min_length=1, max_length=1000)
+    claim_refs: list[str] = Field(default_factory=list)
+    #: The conflicting values, one per side.
+    values: list[str] = Field(default_factory=list)
+    #: Source ids for both sides.
+    source_ids: list[str] = Field(default_factory=list)
+    #: unresolved | stronger_authority_noted
+    resolution_status: str = Field(default="unresolved", max_length=32)
+    stronger_authority_source_id: str | None = Field(default=None, max_length=64)
+    explanation: str | None = Field(default=None, max_length=1000)
+
+
 class ResearchReport(ArtifactModel):
-    """research → research artifact."""
+    """research → research artifact.
+
+    Phase 0 fields are preserved for backward compatibility (the pipeline
+    populates them alongside the richer Phase 2 fields).
+    """
 
     research_report_id: str = Field(min_length=1)
     opportunity_id: str | None = None
@@ -288,6 +422,26 @@ class ResearchReport(ArtifactModel):
     sources: list[ResearchSourceRef] = Field(default_factory=list)
     claims: list[ResearchClaimItem] = Field(default_factory=list)
     contradictions: list[Contradiction] = Field(default_factory=list)
+    # --- Phase 2 extensions (all optional for backward compatibility) ---
+    project_id: str | None = Field(default=None, max_length=64)
+    #: The central research question.
+    research_question: str | None = Field(default=None, max_length=500)
+    executive_findings: list[str] = Field(default_factory=list)
+    verified_claims: list[VerifiedClaim] = Field(default_factory=list)
+    contested_claims: list[VerifiedClaim] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+    #: Rich source list with quality indicators.
+    source_list: list[SourceItem] = Field(default_factory=list)
+    source_quality: dict[str, Any] = Field(default_factory=dict)
+    contradiction_details: list[ContradictionDetail] = Field(default_factory=list)
+    confidence_summary: dict[str, Any] = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)
+    research_plan_id: str | None = Field(default=None, max_length=64)
+    depth: str | None = Field(default=None, max_length=16)
+    language: str | None = Field(default=None, max_length=16)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -497,6 +651,30 @@ ARTIFACT_CONTRACTS: dict[ArtifactType, ArtifactContract] = {
         ARTIFACT_SCHEMA_VERSION,
         ResearchReport,
         "research_report.schema.json",
+    ),
+    ArtifactType.RESEARCH_PLAN: ArtifactContract(
+        ArtifactType.RESEARCH_PLAN,
+        ARTIFACT_SCHEMA_VERSION,
+        ResearchPlan,
+        "research_plan.schema.json",
+    ),
+    ArtifactType.SOURCE: ArtifactContract(
+        ArtifactType.SOURCE,
+        ARTIFACT_SCHEMA_VERSION,
+        SourceItem,
+        "source.schema.json",
+    ),
+    ArtifactType.EVIDENCE: ArtifactContract(
+        ArtifactType.EVIDENCE,
+        ARTIFACT_SCHEMA_VERSION,
+        EvidenceItem,
+        "evidence.schema.json",
+    ),
+    ArtifactType.RESEARCH_CLAIM: ArtifactContract(
+        ArtifactType.RESEARCH_CLAIM,
+        ARTIFACT_SCHEMA_VERSION,
+        VerifiedClaim,
+        "research_claim.schema.json",
     ),
     ArtifactType.CONTENT_BRIEF: ArtifactContract(
         ArtifactType.CONTENT_BRIEF,

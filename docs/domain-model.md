@@ -44,11 +44,22 @@ discriminator (see `docs/job-system.md`).
 
 ### Research plane
 
+Phase 2 (see `docs/research-plane.md`) realizes the research plane as
+**artifact-first contracts** — sources, evidence, claims, and reports are
+versioned artifacts with typed contracts; the database holds only the
+cross-job `source_cache` (dedup + fingerprinting). The Phase 0 relational
+tables (`sources`, `research_documents`, `research_claims`) remain part of
+the domain model; the pipeline's canonical data lives in artifacts.
+
 | Entity | Kind | Notes |
 | --- | --- | --- |
-| `Source` | relational | url, source type, collected_at |
-| `ResearchDocument` | relational | extracted content from a source |
-| `ResearchClaim` | relational | claim, support status (supported/contradicted/unverified), confidence |
+| `ResearchPlan` | **artifact-first** (`research_plan`) | plan derived from an opportunity: central question, subquestions, required facts, source/verification requirements |
+| `SourceItem` | **artifact-first** (`source`) | url + fingerprints, justified type/authority, collection status (metadata only — never full content) |
+| `EvidenceItem` | **artifact-first** (`evidence`) | extracted fact with bounded passage, location, confidence, structured subject/predicate/value |
+| `VerifiedClaim` | **artifact-first** (`research_claim`) | claim with verification status, provenance, independent-source count |
+| `ResearchReport` | **artifact-first** (`research_report`) | findings, verified/contested claims, evidence map, sources + quality, contradictions, confidence summary, limitations, lineage |
+| `SourceCacheEntry` | relational (cross-job cache) | collected source content (bounded) + fingerprints + TTL + hit count |
+| `Source` / `ResearchDocument` / `ResearchClaim` | relational (Phase 0 model) | domain tables retained; pipeline data lives in artifacts |
 
 ### Content plane
 

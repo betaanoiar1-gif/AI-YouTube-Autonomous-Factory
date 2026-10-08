@@ -22,6 +22,12 @@ Unimplemented providers are **contracts, not fakes**: calling them raises
 `NotImplementedError` with a pointer to the phase that implements them. No
 pretend implementations exist.
 
+Phase 2 adds the research-plane contracts (`factory/providers/research/`):
+`ResearchProvider`, `SourceProvider`, `EvidenceExtractor`, `ClaimVerifier` —
+implemented by the deterministic planner/extractor/verifier and the
+`WebSourceProvider` (documented free search API + SSRF-protected collection).
+See `docs/research-plane.md` and `docs/decisions/ADR-0013`.
+
 `DiscoveryProvider` is the boundary for YouTube data access; the Phase 1
 implementation (`YouTubeDiscoveryProvider`) uses the documented YouTube
 Data API v3 only (`search`/`videos`/`channels`, API-key auth), respects

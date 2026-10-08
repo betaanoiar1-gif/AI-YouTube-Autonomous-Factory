@@ -6,6 +6,7 @@
 | --- | --- | --- | --- |
 | Unit | `tests/unit/` | configuration, security/redaction, CleanAPIs client & provider (mocked HTTP), LLM cache, budgets, job lifecycle, artifact store, artifact contracts, domain models, usage tracking, health API, migrations, database helpers | **No** — `httpx.MockTransport`; fake keys only |
 | **Simulated YouTube (offline)** | `tests/simulated/` (YouTube tests) | the **production** `YouTubeDiscoveryProvider` + intelligence pipeline against a local simulated YouTube Data API v3 (real sockets on `127.0.0.1`) | **No** — local simulation only; one clearly-fake key; marked `simulated` + `offline` |
+| **Simulated Research (offline)** | `tests/simulated/` (research tests) | the **production** research pipeline (`WebSourceProvider` + SSRF-protected `SafeFetcher` + engine) against a local simulated search API and source documents (real sockets on `127.0.0.x`) | **No** — local simulation only; no credentials; marked `simulated` + `offline` |
 | Integration (live) | `tests/integration/` | the REAL CleanAPIs connectivity test | **Yes** — marked `live` |
 
 ## Rules
@@ -51,7 +52,7 @@ LLM cache (determinism, TTL, persistence, hit counting), budgets, health API
 
 ```bash
 make test           # full automated suite (unit + simulated; live deselected)
-make test-simulated # ONLY the simulated/offline tests (CleanAPIs + YouTube)
+make test-simulated # ONLY the simulated/offline tests (CleanAPIs + YouTube + Research)
 make test-live      # ONLY the live CleanAPIs connectivity test (owner-run, needs a real key)
 make lint           # ruff check
 make format         # ruff format

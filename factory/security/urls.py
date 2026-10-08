@@ -34,3 +34,50 @@ def validate_http_url(url: str, *, allowed_schemes: tuple[str, ...] = ALLOWED_SC
     if parts.username is not None or parts.password is not None:
         raise UnsafeURLError("URLs with embedded credentials are not allowed")
     return url.strip()
+
+
+def canonicalize_url(url: str) -> str:
+    """Canonicalize a URL for deduplication.
+
+    Lowercases scheme/host, strips default ports and fragments, removes
+    common tracking parameters, sorts remaining query parameters, and
+    normalizes the path (no trailing slash except root).
+    """
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    parts = urlsplit(url.strip())
+    scheme = parts.scheme.lower() or "https"
+    host = (parts.hostname or "").lower()
+    try:
+        port = parts.port
+    except ValueError:
+        port = None
+    netloc = host if port in (None, 80, 443) else f"{host}:{port}"
+    if (scheme == "https" and port == 443) or (scheme == "http" and port == 80):
+        netloc = host
+    path = parts.path or "/"
+    if len(path) > 1 and path.endswith("/"):
+        path = path.rstrip("/")
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if not key.lower().startswith("utm_")
+    ]
+    query.sort()
+    return urlunsplit((scheme, netloc, path, urlencode(query), ""))
+
+
+def url_fingerprint(url: str) -> str:
+    """SHA-256 fingerprint of the canonical URL (stable dedup key)."""
+    import hashlib
+
+    return hashlib.sha256(canonicalize_url(url).encode("utf-8")).hexdigest()
+
+
+def registered_domain(host: str) -> str:
+    """Best-effort registered domain (last two labels) for source independence."""
+    host = (host or "").lower().strip(".")
+    if not host:
+        return ""
+    labels = host.split(".")
+    return ".".join(labels[-2:]) if len(labels) >= 2 else host

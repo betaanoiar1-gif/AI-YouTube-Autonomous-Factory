@@ -130,7 +130,8 @@ restarts from its checkpoint without corrupting completed artifacts.
 ## Technology stack
 
 See `docs/decisions/ADR-0001-technology-stack.md` for the full rationale. The
-intelligence plane (Phase 1) is documented in `docs/intelligence-plane.md`.
+intelligence plane (Phase 1) is documented in `docs/intelligence-plane.md`;
+the research plane (Phase 2) in `docs/research-plane.md`.
 
 * **Language:** Python 3.11 (mature AI/ML ecosystem, strong typing, runs locally)
 * **API:** FastAPI + uvicorn (health check now; control API later)

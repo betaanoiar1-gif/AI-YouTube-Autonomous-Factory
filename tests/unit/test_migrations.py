@@ -30,6 +30,7 @@ EXPECTED_TABLES = {
     "providers",
     "research_claims",
     "research_documents",
+    "source_cache",
     "sources",
     "topic_clusters",
     "topics",

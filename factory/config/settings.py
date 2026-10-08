@@ -17,6 +17,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from factory.config.provider_config import get_cleanapis_settings
+from factory.config.research_config import reset_research_settings_cache
 from factory.config.youtube_config import get_youtube_settings, reset_youtube_settings_cache
 from factory.errors import ConfigurationError
 from factory.security.redaction import register_secret
@@ -104,6 +105,7 @@ def reset_settings_caches() -> None:
     get_app_settings.cache_clear()
     get_cleanapis_settings.cache_clear()
     reset_youtube_settings_cache()
+    reset_research_settings_cache()
 
 
 def register_runtime_secrets() -> None:

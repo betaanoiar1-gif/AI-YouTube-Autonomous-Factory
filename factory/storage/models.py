@@ -513,6 +513,38 @@ class DiscoveryCacheEntry(Base):
     )
 
 
+class SourceCacheEntry(Base):
+    """Cross-job cache of collected sources (dedup + fingerprinting).
+
+    Keyed by the canonical-URL fingerprint, storing the collected content
+    (bounded), its content fingerprint (syndication detection), and the
+    collection status — so re-running research never re-collects the same
+    source.
+    """
+
+    __tablename__ = "source_cache"
+
+    url_fingerprint: Mapped[str] = mapped_column(String(64), primary_key=True)
+    canonical_url: Mapped[str] = mapped_column(String(2000))
+    content_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: Collected text, bounded (larger sources keep only fingerprints).
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    byte_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: collected | failed
+    status: Mapped[str] = mapped_column(String(32), default="collected", index=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    hit_count: Mapped[int] = mapped_column(Integer, default=0)
+    #: Provider-specific metadata (provider name, title, publisher, ...).
+    provider_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata", JSON, nullable=True
+    )
+
+
 class LLMCacheEntry(Base):
     """A cached LLM response (deduplication of deterministic requests)."""
 

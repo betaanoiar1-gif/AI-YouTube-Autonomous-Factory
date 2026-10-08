@@ -84,6 +84,15 @@ honoring `Retry-After`.
   (deterministic operations use the cache; the connectivity probe picks the
   cheapest model).
 
+## Research-plane cost control (Phase 2)
+
+The research plane extends the same architecture: source deduplication by
+canonical-URL fingerprint, content fingerprinting for syndication detection,
+a cross-job `source_cache` (a source is never collected twice), bounded
+collection sizes and evidence caps, per-job source limits by depth, retry
+limits, and per-call provider usage tracking. No source is collected
+repeatedly; no large source copies are stored in artifacts or checkpoints.
+
 ## What is NOT in Phase 0 (by design)
 
 * Per-project cost budgets and spend dashboards (the data is all there —

@@ -150,9 +150,10 @@ def _cmd_serve(args: argparse.Namespace) -> int:
 
 
 def _build_pipeline() -> tuple[Any, Any]:
-    """Build the production intelligence pipeline (DB-backed wiring)."""
+    """Build the production pipeline (intelligence + research, DB-backed wiring)."""
     from factory.config.settings import get_app_settings, register_runtime_secrets
     from factory.intelligence.pipeline import build_default_pipeline
+    from factory.research.pipeline import build_default_research_pipeline
     from factory.storage.artifacts import ArtifactStore
     from factory.storage.db import create_engine_from_url, make_session_factory
 
@@ -161,9 +162,30 @@ def _build_pipeline() -> tuple[Any, Any]:
     engine = create_engine_from_url(settings.database_url)
     session_factory = make_session_factory(engine)
     artifact_store = ArtifactStore(session_factory, settings.artifact_storage_dir)
-    return build_default_pipeline(
+    intelligence = build_default_pipeline(
         session_factory=session_factory, artifact_store=artifact_store
-    ), session_factory
+    )
+    research = build_default_research_pipeline(
+        session_factory=session_factory, artifact_store=artifact_store
+    )
+    return _PipelineFacade(intelligence, research), session_factory
+
+
+class _PipelineFacade:
+    """Runs pipeline jobs through the merged intelligence + research handlers."""
+
+    def __init__(self, intelligence: Any, research: Any) -> None:
+        self.handlers = {**intelligence.handlers, **research.handlers}
+
+    def run_job(self, service: Any, job_id: str) -> Any:
+        from factory.jobs.runner import run_job
+        from factory.jobs.types import JobType
+
+        job = service.get(job_id)
+        handler = self.handlers.get(JobType(job.type))
+        if handler is None:
+            raise ValueError(f"no pipeline handler registered for job type {job.type}")
+        return run_job(service, job_id, handler)
 
 
 def _cmd_pipeline_run(args: argparse.Namespace) -> int:
@@ -295,7 +317,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--job-type",
         required=True,
-        choices=["youtube_discovery", "market_analysis", "opportunity_detection"],
+        choices=[
+            "youtube_discovery",
+            "market_analysis",
+            "opportunity_detection",
+            "research",
+        ],
     )
     run_parser.add_argument("--project-id", required=True)
     run_parser.add_argument("--payload", default=None, help="JSON job payload")
