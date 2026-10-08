@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/storyboard.schema.json",
+  "title": "Storyboard",
+  "description": "visual planning -> storyboard artifact: the shot plan for a script.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "storyboard_id",
+    "script_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "storyboard_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "script_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scene_id"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "scene_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "narration_excerpt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "shot_id",
+                "index",
+                "shot_type",
+                "description"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                  "default": "1.0.0"
+                },
+                "shot_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "shot_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "duration_seconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "visual_prompt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "asset_hints": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "total_duration_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    }
+  }
+}

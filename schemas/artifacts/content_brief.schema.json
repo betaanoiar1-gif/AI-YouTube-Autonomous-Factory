@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/content_brief.schema.json",
+  "title": "ContentBrief",
+  "description": "content brief artifact: the original content strategy for an opportunity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brief_id",
+    "opportunity_id",
+    "title",
+    "angle",
+    "target_audience",
+    "estimated_duration_seconds"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "brief_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "opportunity_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "angle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_audience": {
+      "type": "string",
+      "minLength": 1
+    },
+    "key_points": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "content_gaps_addressed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "estimated_duration_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

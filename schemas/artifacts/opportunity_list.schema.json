@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/opportunity_list.schema.json",
+  "title": "OpportunityList",
+  "description": "opportunity -> opportunity artifact: ranked content opportunities and gaps.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "opportunity_list_id",
+    "project_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "opportunity_list_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "topic",
+          "score",
+          "rationale"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "topic": {
+            "type": "string",
+            "minLength": 1
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_gap": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

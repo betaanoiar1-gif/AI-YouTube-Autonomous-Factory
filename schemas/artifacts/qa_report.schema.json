@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/qa_report.schema.json",
+  "title": "QAReport",
+  "description": "QA -> QA artifact: structured quality-control results for a pipeline output.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_id",
+    "target_artifact_id",
+    "target_artifact_type"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_artifact_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_artifact_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "checked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "check_id",
+          "category",
+          "status"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "check_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "factual",
+              "narrative",
+              "visual",
+              "audio",
+              "subtitle",
+              "technical"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ]
+          },
+          "details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ],
+      "default": "pass"
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

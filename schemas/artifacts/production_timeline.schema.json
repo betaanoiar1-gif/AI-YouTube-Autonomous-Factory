@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/production_timeline.schema.json",
+  "title": "ProductionTimeline",
+  "description": "production -> timeline artifact: the edit timeline with tracks and clips.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timeline_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "timeline_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "script_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "track_type"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "track_type": {
+            "type": "string",
+            "enum": [
+              "video",
+              "audio",
+              "voice",
+              "music",
+              "subtitle",
+              "graphic"
+            ]
+          },
+          "clips": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "clip_id",
+                "start_seconds",
+                "duration_seconds"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                  "default": "1.0.0"
+                },
+                "clip_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "start_seconds": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "duration_seconds": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "scene_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "shot_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "asset_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "total_duration_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    }
+  }
+}

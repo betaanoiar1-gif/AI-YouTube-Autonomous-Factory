@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/discovery_result.schema.json",
+  "title": "DiscoveryResult",
+  "description": "discovery -> discovery artifact: videos found for a query, with metrics snapshots.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "discovery_id",
+    "project_id",
+    "query"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "discovery_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1
+    },
+    "discovered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "videos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "video_id",
+          "channel_id",
+          "title",
+          "url"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "video_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "likes": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "comments": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      }
+    },
+    "quota_units_used": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    }
+  }
+}

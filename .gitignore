@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+
+# Runtime data (created on demand, never committed)
+# NOTE: anchored to the repo root so the factory/storage/ package is NOT ignored.
+/storage/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Tooling
+.tox/
+coverage.xml
+htmlcov/
+.coverage
+
+# Packaging build artifacts
+*.egg-info/
+dist/
+build/
