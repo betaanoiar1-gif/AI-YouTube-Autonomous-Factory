@@ -55,6 +55,13 @@ def create_app(
             "base_url": cleanapis_settings.base_url,
             "model_configured": bool(cleanapis_settings.model),
         }
+        from factory.config.youtube_config import get_youtube_settings
+
+        youtube_settings = get_youtube_settings()
+        checks["youtube"] = {
+            "configured": youtube_settings.is_configured,
+            "base_url": youtube_settings.base_url,
+        }
 
         ok = all(
             check.get("status") == "ok" if isinstance(check, dict) else bool(check)

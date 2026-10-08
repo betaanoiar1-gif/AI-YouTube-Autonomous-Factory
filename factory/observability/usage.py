@@ -43,6 +43,8 @@ class ProviderUsageRecord:
     purpose: str | None = None
     request_id: str | None = None
     usage_available: bool = True
+    #: Provider-specific metadata (e.g. quota units for the YouTube API).
+    metadata: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -80,6 +82,7 @@ class SQLAlchemyUsageTracker:
                 error_type=record.error_type,
                 request_id=record.request_id,
                 usage_available=record.usage_available,
+                provider_metadata=record.metadata,
             )
             session.add(row)
             session.commit()

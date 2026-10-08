@@ -78,6 +78,15 @@ def _cmd_health(args: argparse.Namespace) -> int:
         "model_configured": bool(cleanapis.model),
     }
 
+    # YouTube Data API configuration (never the key).
+    from factory.config.youtube_config import get_youtube_settings
+
+    youtube = get_youtube_settings()
+    report["checks"]["youtube"] = {
+        "configured": youtube.is_configured,
+        "base_url": youtube.base_url,
+    }
+
     ok = all(
         report["checks"][name].get("status") == "ok" for name in ("database", "artifact_storage")
     )
@@ -140,6 +149,120 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _build_pipeline() -> tuple[Any, Any]:
+    """Build the production intelligence pipeline (DB-backed wiring)."""
+    from factory.config.settings import get_app_settings, register_runtime_secrets
+    from factory.intelligence.pipeline import build_default_pipeline
+    from factory.storage.artifacts import ArtifactStore
+    from factory.storage.db import create_engine_from_url, make_session_factory
+
+    register_runtime_secrets()
+    settings = get_app_settings()
+    engine = create_engine_from_url(settings.database_url)
+    session_factory = make_session_factory(engine)
+    artifact_store = ArtifactStore(session_factory, settings.artifact_storage_dir)
+    return build_default_pipeline(
+        session_factory=session_factory, artifact_store=artifact_store
+    ), session_factory
+
+
+def _cmd_pipeline_run(args: argparse.Namespace) -> int:
+    import json as _json
+
+    from factory.jobs.service import JobService
+    from factory.jobs.types import JobType
+
+    pipeline, session_factory = _build_pipeline()
+    service = JobService(session_factory)
+    payload = _json.loads(args.payload) if args.payload else {}
+    job_type = JobType(args.job_type)
+    job = service.enqueue(
+        job_type,
+        project_id=args.project_id,
+        payload=payload,
+        idempotency_key=args.idempotency_key,
+        input_artifact_id=args.input_artifact_id,
+    )
+    record = pipeline.run_job(service, job.id)
+    print(
+        _json.dumps(
+            {
+                "job_id": record.id,
+                "type": record.type.value,
+                "status": record.status.value,
+                "output_artifact_id": record.output_artifact_id,
+                "error": record.error,
+            },
+            indent=2,
+            default=str,
+        )
+    )
+    return 0 if record.status.value == "succeeded" else 1
+
+
+def _cmd_pipeline_run_chain(args: argparse.Namespace) -> int:
+    """Run discovery → market analysis → opportunity detection in sequence."""
+    import json as _json
+
+    from factory.jobs.service import JobService
+    from factory.jobs.types import JobType
+
+    pipeline, session_factory = _build_pipeline()
+    service = JobService(session_factory)
+    payload = _json.loads(args.payload) if args.payload else {}
+
+    discovery = service.enqueue(
+        JobType.YOUTUBE_DISCOVERY, project_id=args.project_id, payload=payload
+    )
+    record = pipeline.run_job(service, discovery.id)
+    if record.status.value != "succeeded":
+        print(
+            _json.dumps(
+                {"stage": "discovery", "status": record.status.value, "error": record.error},
+                indent=2,
+                default=str,
+            )
+        )
+        return 1
+
+    analysis = service.enqueue(
+        JobType.MARKET_ANALYSIS,
+        project_id=args.project_id,
+        input_artifact_id=record.output_artifact_id,
+    )
+    record = pipeline.run_job(service, analysis.id)
+    if record.status.value != "succeeded":
+        print(
+            _json.dumps(
+                {"stage": "analysis", "status": record.status.value, "error": record.error},
+                indent=2,
+                default=str,
+            )
+        )
+        return 1
+
+    opportunities = service.enqueue(
+        JobType.OPPORTUNITY_DETECTION,
+        project_id=args.project_id,
+        input_artifact_id=record.output_artifact_id,
+    )
+    record = pipeline.run_job(service, opportunities.id)
+    print(
+        _json.dumps(
+            {
+                "discovery_artifact_id": discovery.output_artifact_id,
+                "analysis_artifact_id": analysis.output_artifact_id,
+                "opportunity_list_artifact_id": record.output_artifact_id,
+                "status": record.status.value,
+                "error": record.error,
+            },
+            indent=2,
+            default=str,
+        )
+    )
+    return 0 if record.status.value == "succeeded" else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="factory", description=__doc__)
     parser.add_argument("--version", action="version", version=f"factory {__version__}")
@@ -165,6 +288,26 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--host", default=None)
     serve_parser.add_argument("--port", type=int, default=None)
     serve_parser.set_defaults(func=_cmd_serve)
+
+    pipeline_parser = subparsers.add_parser("pipeline", help="Intelligence pipeline (Phase 1)")
+    pipeline_sub = pipeline_parser.add_subparsers(dest="pipeline_command", required=True)
+    run_parser = pipeline_sub.add_parser("run", help="Enqueue and run a single pipeline job")
+    run_parser.add_argument(
+        "--job-type",
+        required=True,
+        choices=["youtube_discovery", "market_analysis", "opportunity_detection"],
+    )
+    run_parser.add_argument("--project-id", required=True)
+    run_parser.add_argument("--payload", default=None, help="JSON job payload")
+    run_parser.add_argument("--idempotency-key", default=None)
+    run_parser.add_argument("--input-artifact-id", default=None)
+    run_parser.set_defaults(func=_cmd_pipeline_run)
+    chain_parser = pipeline_sub.add_parser(
+        "run-chain", help="Run discovery → analysis → opportunities in sequence"
+    )
+    chain_parser.add_argument("--project-id", required=True)
+    chain_parser.add_argument("--payload", default=None, help="JSON discovery payload")
+    chain_parser.set_defaults(func=_cmd_pipeline_run_chain)
 
     return parser
 

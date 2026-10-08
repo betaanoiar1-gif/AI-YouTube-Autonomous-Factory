@@ -24,7 +24,7 @@ abstraction, observability); later phases fill in plane-specific engines.
 | Plane | Responsibility | Phase 0 state |
 | --- | --- | --- |
 | **Control** | projects, channels, niches, configuration, jobs, scheduling, pipeline state, user settings | Domain model + storage + job system |
-| **Intelligence** | YouTube discovery, metadata collection, channel/performance analysis, topic clustering, trend detection, success scoring, opportunity detection | `DiscoveryProvider` contract only (Phase 1) |
+| **Intelligence** | YouTube discovery, metadata collection, channel/performance analysis, topic clustering, success scoring, opportunity detection | **Implemented (Phase 1)** — `YouTubeDiscoveryProvider`, deterministic analysis/clustering/opportunities; see `docs/intelligence-plane.md` |
 | **Research** | source discovery/collection, evidence extraction, fact management, contradiction detection, research reports | Domain model + artifact contract |
 | **Content** | opportunities, briefs, narrative structures, scripts, claims, citations, visual planning | Domain model + artifact contracts |
 | **Production** | asset management, voice, audio, timeline, editing, rendering, export | Domain model + artifact contracts; `TTSProvider`/`VideoProvider`/`ImageProvider` contracts |
@@ -129,7 +129,8 @@ restarts from its checkpoint without corrupting completed artifacts.
 
 ## Technology stack
 
-See `docs/decisions/ADR-0001-technology-stack.md` for the full rationale.
+See `docs/decisions/ADR-0001-technology-stack.md` for the full rationale. The
+intelligence plane (Phase 1) is documented in `docs/intelligence-plane.md`.
 
 * **Language:** Python 3.11 (mature AI/ML ecosystem, strong typing, runs locally)
 * **API:** FastAPI + uvicorn (health check now; control API later)

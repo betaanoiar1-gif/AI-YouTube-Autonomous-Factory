@@ -184,18 +184,25 @@ class ArtifactStore:
         *,
         lineage_key: str | None = None,
     ) -> tuple[ArtifactRecord, dict[str, Any]]:
-        """Load the newest artifact of a type for a project (optionally a lineage)."""
+        """Load the newest artifact of a type for a project.
+
+        ``lineage_key`` optionally narrows the search to one lineage; when
+        omitted, the newest artifact of the type across ALL lineages is
+        returned.
+        """
         artifact_type = ArtifactType(artifact_type)
         from sqlalchemy import select
 
         with self._session_factory() as session:
+            conditions = [
+                Artifact.project_id == project_id,
+                Artifact.type == artifact_type.value,
+            ]
+            if lineage_key is not None:
+                conditions.append(Artifact.lineage_key == lineage_key)
             stmt = (
                 select(Artifact)
-                .where(
-                    Artifact.project_id == project_id,
-                    Artifact.type == artifact_type.value,
-                    Artifact.lineage_key == lineage_key,
-                )
+                .where(*conditions)
                 .order_by(Artifact.version.desc(), Artifact.created_at.desc())
                 .limit(1)
             )

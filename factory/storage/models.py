@@ -482,8 +482,35 @@ class ProviderUsage(Base):
     error_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     usage_available: Mapped[bool] = mapped_column(default=True)
+    #: Provider-specific metadata (e.g. quota units for the YouTube API).
+    #: (Attribute renamed because ``metadata`` is reserved on declarative bases;
+    #: the column name stays ``metadata``.)
+    provider_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata", JSON, nullable=True
+    )
 
     __table_args__ = (Index("ix_provider_usage_job", "job_id", "requested_at"),)
+
+
+class DiscoveryCacheEntry(Base):
+    """A cached discovery API response (search page, video or channel details).
+
+    Avoids unnecessary paid API calls: re-running discovery for the same
+    query/params serves the cached pages instead of spending quota.
+    """
+
+    __tablename__ = "discovery_cache"
+
+    cache_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(64), index=True)
+    endpoint: Mapped[str] = mapped_column(String(64), index=True)
+    request_json: Mapped[str] = mapped_column(Text)
+    response_json: Mapped[str] = mapped_column(Text)
+    hit_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
 
 
 class LLMCacheEntry(Base):

@@ -20,6 +20,7 @@ EXPECTED_TABLES = {
     "channels",
     "content_briefs",
     "content_opportunities",
+    "discovery_cache",
     "job_events",
     "llm_cache",
     "niches",

@@ -12,8 +12,8 @@ The product brief's typed jobs map onto one discriminator enum:
 
 | Brief name | `JobType` | Output artifact |
 | --- | --- | --- |
-| DISCOVERY_JOB | `DISCOVERY` | `discovery_result` |
-| ANALYSIS_JOB | `ANALYSIS` | `analysis_result` |
+| DISCOVERY_JOB | `YOUTUBE_DISCOVERY` | `discovery_result` |
+| ANALYSIS_JOB | `MARKET_ANALYSIS` | `analysis_result` |
 | — | `OPPORTUNITY_DETECTION` | `opportunity_list` |
 | RESEARCH_JOB | `RESEARCH` | `research_report` |
 | — | `CONTENT_BRIEF` | `content_brief` |
@@ -69,6 +69,22 @@ Allowed transitions (enforced by `JobService`):
 * `SUCCEEDED →` *(terminal)*
 
 Invalid transitions raise `InvalidJobTransitionError`.
+
+## Phase 1 pipeline handlers
+
+`factory/intelligence/pipeline.py` wires the intelligence engines to the job
+system as handlers (`IntelligencePipeline.handlers`):
+
+* `YOUTUBE_DISCOVERY` → `DiscoveryEngine` — paginated search → video metrics →
+  channel metrics → `discovery_result` artifact (checkpointed per stage);
+* `MARKET_ANALYSIS` → `AnalysisEngine` — loads the discovery artifact (never
+  re-runs discovery) → `analysis_result` artifact;
+* `OPPORTUNITY_DETECTION` → `OpportunityEngine` — loads the analysis artifact
+  + deterministic clustering → `opportunity_list` artifact.
+
+Run a single stage or the whole chain from the CLI:
+`factory pipeline run --job-type youtube_discovery --project-id … --payload …`
+or `factory pipeline run-chain --project-id … --payload …`.
 
 ## Semantics
 

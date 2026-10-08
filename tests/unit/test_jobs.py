@@ -16,15 +16,17 @@ from factory.storage.models import JobEvent
 
 class TestLifecycle:
     def test_enqueue_creates_pending_job(self, job_service: JobService):
-        job = job_service.enqueue(JobType.DISCOVERY, project_id="proj-1", payload={"q": "x"})
+        job = job_service.enqueue(
+            JobType.YOUTUBE_DISCOVERY, project_id="proj-1", payload={"q": "x"}
+        )
         assert job.status == JobStatus.PENDING
-        assert job.type == JobType.DISCOVERY
+        assert job.type == JobType.YOUTUBE_DISCOVERY
         assert job.progress == 0
         assert job.attempts == 0
         assert job.payload == {"q": "x"}
 
     def test_claim_moves_to_running_and_counts_attempt(self, job_service: JobService):
-        job = job_service.enqueue(JobType.ANALYSIS)
+        job = job_service.enqueue(JobType.MARKET_ANALYSIS)
         claimed = job_service.claim(job.id)
         assert claimed is not None
         assert claimed.status == JobStatus.RUNNING
@@ -87,8 +89,8 @@ class TestLifecycle:
             job_service.restart(job.id)
 
     def test_idempotent_enqueue(self, job_service: JobService):
-        first = job_service.enqueue(JobType.DISCOVERY, idempotency_key="run-1")
-        second = job_service.enqueue(JobType.DISCOVERY, idempotency_key="run-1")
+        first = job_service.enqueue(JobType.YOUTUBE_DISCOVERY, idempotency_key="run-1")
+        second = job_service.enqueue(JobType.YOUTUBE_DISCOVERY, idempotency_key="run-1")
         assert first.id == second.id
 
 
@@ -236,7 +238,7 @@ class TestRunner:
         assert "job_succeeded" in messages
 
     def test_list_filters(self, job_service: JobService):
-        job_service.enqueue(JobType.DISCOVERY, project_id="p1")
+        job_service.enqueue(JobType.YOUTUBE_DISCOVERY, project_id="p1")
         job_service.enqueue(JobType.QA, project_id="p2")
         assert len(job_service.list_jobs(project_id="p1")) == 1
         assert len(job_service.list_jobs(job_type=JobType.QA)) == 1

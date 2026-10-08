@@ -23,7 +23,7 @@ from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import Any
 
-from factory.security.redaction import redact_mapping, redact_text
+from factory.security.redaction import redact_args, redact_mapping, redact_text
 
 # Immutable empty mapping as the default (mutable ContextVar defaults are shared).
 _EMPTY_CONTEXT: MappingProxyType[str, Any] = MappingProxyType({})
@@ -46,7 +46,8 @@ class SecretRedactionFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = redact_text(str(record.msg))
         if record.args:
-            record.args = redact_mapping(record.args)
+            # Preserve the tuple/dict structure: getMessage() needs it.
+            record.args = redact_args(record.args)
         for key, value in list(vars(record).items()):
             if key in _RESERVED_RECORD_KEYS or key.startswith("_"):
                 continue

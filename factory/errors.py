@@ -131,6 +131,28 @@ class MalformedResponseError(ProviderError):
     """The provider response could not be parsed or failed schema checks."""
 
 
+class QuotaExceededError(ProviderError):
+    """A provider quota was exceeded (e.g. YouTube daily quota, or the
+    per-run quota budget). Not transient — retrying immediately would only
+    spend more quota."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        quota_used: int | None = None,
+        quota_limit: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(message, **kwargs)
+        self.quota_used = quota_used
+        self.quota_limit = quota_limit
+
+
+class ResourceNotFoundError(ProviderError):
+    """The provider reported that the requested resource does not exist."""
+
+
 class StructuredOutputError(ProviderError):
     """The provider failed to produce output matching the required schema."""
 

@@ -40,8 +40,21 @@ Phase 0 (architecture & foundation) is complete:
   manual owner-run with a real key (`make connectivity`). It was not run in
   the build sandbox (no key in env; egress blocked). See `docs/cleanapis.md`.
 
-Not in Phase 0 (by design): full YouTube discovery, opportunity/research/
-script engines, video rendering, dashboard, autonomous scheduling.
+**Phase 1 (intelligence plane) is also complete:** production
+`YouTubeDiscoveryProvider` (YouTube Data API v3 only), the
+`YOUTUBE_DISCOVERY` → `MARKET_ANALYSIS` → `OPPORTUNITY_DETECTION` pipeline
+(deterministic, resumable, quota-aware), extended artifact contracts, and a
+realistic offline YouTube simulation for automated tests. See
+`docs/intelligence-plane.md` and `docs/phase-1-final-report.md`.
+
+```bash
+# Run the intelligence pipeline (owner, with a real YouTube API key)
+python -m factory.cli pipeline run-chain --project-id proj-1 \
+  --payload '{"query": "forgotten tunnels", "language": "en", "result_limit": 50}'
+```
+
+Not in Phases 0-1 (by design): research, script, visual, production,
+rendering, QA, publishing, dashboard, autonomous scheduling.
 
 ## Quickstart
 
@@ -82,6 +95,8 @@ make serve            # http://localhost:8080/health
 | `docs/cost-control.md` | caching, usage tracking, budgets, model selection, quotas |
 | `docs/cleanapis.md` | **verified** CleanAPIs facts, configuration, errors, connectivity test |
 | `docs/phase-0-final-report.md` | **Phase 0 final report** (simulated vs real connectivity status) |
+| `docs/intelligence-plane.md` | **Phase 1**: DiscoveryProvider, analysis methodology, scoring, clustering, opportunities, quota strategy |
+| `docs/phase-1-final-report.md` | **Phase 1 final report** (simulated vs real YouTube API status) |
 | `docs/decisions/` | Architecture Decision Records (ADR-0001 … ADR-0009) |
 
 ## Security rules (always in force)

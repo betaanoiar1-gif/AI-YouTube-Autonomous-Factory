@@ -16,6 +16,12 @@ from typing import Any, TypeVar
 from pydantic import BaseModel, ValidationError
 
 from factory.errors import StructuredOutputError
+from factory.providers.discovery.types import (
+    DiscoveredChannelItem,
+    DiscoveredVideoItem,
+    DiscoveryPage,
+    DiscoveryQuery,
+)
 from factory.providers.llm.types import LLMMessage, LLMRequest, LLMResponse
 
 T = TypeVar("T", bound=BaseModel)
@@ -182,12 +188,16 @@ class TTSProvider(ABC):
 
 
 class DiscoveryProvider(ABC):
-    """Content discovery provider contract (Phase 1: intelligence plane).
+    """Content discovery provider contract (implemented in Phase 1).
 
-    Implementations must use documented, authorized data APIs (e.g. the
-    YouTube Data API v3), respect quotas and rate limits, and expose quota
-    consumption. Scraping, undocumented endpoints, and quota evasion are
-    explicitly out of scope for this project.
+    Implementations must use documented, authorized data APIs (the Phase 1
+    implementation uses the YouTube Data API v3 only), respect quotas and
+    rate limits, and expose quota consumption. Scraping, browser automation,
+    undocumented endpoints, and quota evasion are explicitly out of scope for
+    this project.
+
+    The contract speaks the normalized models from
+    :mod:`factory.providers.discovery.types` — never a vendor wire format.
     """
 
     name: str = "discovery"
@@ -195,40 +205,36 @@ class DiscoveryProvider(ABC):
     @abstractmethod
     def discover_videos(
         self,
-        query: str,
+        query: str | DiscoveryQuery | dict[str, Any],
         *,
         max_results: int = 50,
-        published_after: str | None = None,
         job_id: str | None = None,
-    ) -> list[dict[str, Any]]:
-        """Discover videos for a search query. Returns raw candidate dicts."""
-        raise NotImplementedError(
-            "DiscoveryProvider is a Phase 0 contract; the YouTube implementation "
-            "is built in Phase 1"
-        )
+        page_token: str | None = None,
+        max_pages: int | None = None,
+    ) -> DiscoveryPage:
+        """Discover videos for a search query, one page at a time.
+
+        ``page_token`` resumes pagination (resumability); ``max_pages``
+        bounds the number of pages fetched in one call. Returns a normalized
+        :class:`DiscoveryPage` including the quota units the call consumed.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def get_video_metrics(
         self, video_ids: list[str], *, job_id: str | None = None
-    ) -> list[dict[str, Any]]:
-        """Fetch performance metrics for the given videos."""
-        raise NotImplementedError(
-            "DiscoveryProvider is a Phase 0 contract; the YouTube implementation "
-            "is built in Phase 1"
-        )
+    ) -> list[DiscoveredVideoItem]:
+        """Fetch performance metrics + content details for the given videos."""
+        raise NotImplementedError
 
     @abstractmethod
-    def get_channel_metrics(self, channel_id: str, *, job_id: str | None = None) -> dict[str, Any]:
-        """Fetch performance metrics for a channel."""
-        raise NotImplementedError(
-            "DiscoveryProvider is a Phase 0 contract; the YouTube implementation "
-            "is built in Phase 1"
-        )
+    def get_channel_metrics(
+        self, channel_ids: str | list[str], *, job_id: str | None = None
+    ) -> list[DiscoveredChannelItem]:
+        """Fetch performance metrics for one or more channels."""
+        raise NotImplementedError
 
     @abstractmethod
     def quota_used(self) -> int | None:
         """Return quota units consumed so far, or ``None`` when unknown."""
-        raise NotImplementedError(
-            "DiscoveryProvider is a Phase 0 contract; the YouTube implementation "
-            "is built in Phase 1"
-        )
+        raise NotImplementedError

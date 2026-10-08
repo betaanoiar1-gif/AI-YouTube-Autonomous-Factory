@@ -72,3 +72,21 @@ def redact_mapping(value: Any) -> Any:
     if isinstance(value, str):
         return redact_text(value)
     return value
+
+
+def redact_args(args: Any) -> Any:
+    """Redact ``%``-formatting args while PRESERVING their structure.
+
+    ``LogRecord.getMessage()`` requires ``record.args`` to be a tuple for
+    multi-argument messages (``msg % args``) — converting it to a list breaks
+    %-formatting downstream. Tuples stay tuples, dicts stay dicts.
+    """
+    if isinstance(args, tuple):
+        return tuple(redact_args(item) for item in args)
+    if isinstance(args, dict):
+        return {str(k): redact_args(v) for k, v in args.items()}
+    if isinstance(args, list):
+        return [redact_args(item) for item in args]
+    if isinstance(args, str):
+        return redact_text(args)
+    return args

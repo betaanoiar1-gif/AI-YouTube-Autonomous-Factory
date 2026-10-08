@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/discovery_result.schema.json",
   "title": "DiscoveryResult",
-  "description": "discovery -> discovery artifact: videos found for a query, with metrics snapshots.",
+  "description": "discovery -> discovery artifact: videos and channels found for a query, with metrics snapshots and provider metadata.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -96,6 +96,41 @@
             "type": "integer",
             "minimum": 0,
             "default": 0
+          },
+          "channel_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
+          "description_chars": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 16
+          },
+          "definition": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8
           }
         }
       }
@@ -106,6 +141,82 @@
         "null"
       ],
       "minimum": 0
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 16
+    },
+    "target_audience": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "search_parameters": {
+      "type": "object",
+      "default": {}
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "channel_id",
+          "title"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "subscriber_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "view_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "video_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "default": []
+    },
+    "provider": {
+      "type": "object",
+      "default": {}
     }
   }
 }

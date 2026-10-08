@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -62,7 +63,11 @@ class ArtifactType(StrEnum):
 
 
 class DiscoveredVideo(ArtifactModel):
-    """A video discovered during discovery, with a metrics snapshot."""
+    """A video discovered during discovery, with a metrics snapshot.
+
+    Only metadata is stored — never full competitor content (descriptions are
+    reduced to a character count).
+    """
 
     video_id: str = Field(min_length=1, max_length=64)
     channel_id: str = Field(min_length=1, max_length=128)
@@ -73,6 +78,23 @@ class DiscoveredVideo(ArtifactModel):
     views: int = Field(default=0, ge=0)
     likes: int = Field(default=0, ge=0)
     comments: int = Field(default=0, ge=0)
+    channel_title: str | None = Field(default=None, max_length=256)
+    #: Description length only — the description text is never stored.
+    description_chars: int | None = Field(default=None, ge=0)
+    tags: list[str] = Field(default_factory=list)
+    category_id: str | None = Field(default=None, max_length=16)
+    definition: str | None = Field(default=None, max_length=8)
+
+
+class DiscoveredChannel(ArtifactModel):
+    """A channel discovered during discovery, with a metrics snapshot."""
+
+    channel_id: str = Field(min_length=1, max_length=128)
+    title: str = Field(min_length=1, max_length=256)
+    subscriber_count: int | None = Field(default=None, ge=0)
+    view_count: int | None = Field(default=None, ge=0)
+    video_count: int | None = Field(default=None, ge=0)
+    retrieved_at: datetime = Field(default_factory=_utcnow)
 
 
 class DiscoveryResult(ArtifactModel):
@@ -85,6 +107,13 @@ class DiscoveryResult(ArtifactModel):
     videos: list[DiscoveredVideo] = Field(default_factory=list)
     #: Provider quota units consumed, when the provider reports them.
     quota_units_used: int | None = Field(default=None, ge=0)
+    #: Discovery context (Phase 1 extension).
+    language: str | None = Field(default=None, max_length=16)
+    target_audience: str | None = Field(default=None, max_length=256)
+    search_parameters: dict[str, Any] = Field(default_factory=dict)
+    channels: list[DiscoveredChannel] = Field(default_factory=list)
+    #: Provider metadata (name, endpoint, run info) — never credentials.
+    provider: dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +127,44 @@ class AnalysisPattern(ArtifactModel):
     pattern: str = Field(min_length=1)
     supporting_video_ids: list[str] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    #: topic | format | question | hook (Phase 1 extension).
+    pattern_type: str | None = Field(default=None, max_length=32)
+
+
+class AnalyzedVideo(ArtifactModel):
+    """Per-video analysis evidence: metrics, derived signals, and sub-scores.
+
+    Fields are ``None`` when the required source data is unavailable — the
+    analysis never invents metrics.
+    """
+
+    video_id: str = Field(min_length=1, max_length=64)
+    channel_id: str = Field(min_length=1, max_length=128)
+    title: str = Field(min_length=1)
+    views: int = Field(default=0, ge=0)
+    likes: int = Field(default=0, ge=0)
+    comments: int = Field(default=0, ge=0)
+    duration_seconds: int | None = Field(default=None, ge=0)
+    published_at: datetime | None = None
+    #: Age of the video at analysis time, in days (None when published_at is
+    #: unknown).
+    age_days: float | None = Field(default=None, ge=0)
+    #: View velocity: views per day since publication (None when unknown).
+    views_per_day: float | None = Field(default=None, ge=0)
+    #: (likes + comments) / views (None when views == 0 or unknown).
+    engagement_rate: float | None = Field(default=None, ge=0)
+    #: Comments per 1,000 views (None when unavailable).
+    comments_per_1000_views: float | None = Field(default=None, ge=0)
+    #: Average views per video on the channel (None when channel data is
+    #: unavailable).
+    channel_average_views: float | None = Field(default=None, ge=0)
+    #: views / channel_average_views — performance relative to the channel's
+    #: own baseline (None when unavailable).
+    channel_relative_performance: float | None = Field(default=None)
+    #: Normalized 0..1 sub-scores; only present when computable.
+    sub_scores: dict[str, float] = Field(default_factory=dict)
+    #: Weighted composite score, 0..100.
+    composite_score: float = Field(default=0.0, ge=0.0, le=100.0)
 
 
 class AnalysisResult(ArtifactModel):
@@ -111,6 +178,16 @@ class AnalysisResult(ArtifactModel):
     average_views: float = Field(default=0.0, ge=0.0)
     top_performer_video_ids: list[str] = Field(default_factory=list)
     patterns: list[AnalysisPattern] = Field(default_factory=list)
+    #: Per-video evidence (Phase 1 extension).
+    videos: list[AnalyzedVideo] = Field(default_factory=list)
+    median_views: float = Field(default=0.0, ge=0.0)
+    channel_count: int = Field(default=0, ge=0)
+    #: Competition / saturation aggregates (Phase 1 extension).
+    competition: dict[str, Any] = Field(default_factory=dict)
+    #: Scoring documentation: weights and formulas (Phase 1 extension).
+    scoring: dict[str, Any] = Field(default_factory=dict)
+    #: The discovery artifact this analysis was computed from.
+    source_artifact_id: str | None = Field(default=None, max_length=64)
 
 
 # ---------------------------------------------------------------------------
@@ -119,13 +196,48 @@ class AnalysisResult(ArtifactModel):
 
 
 class OpportunityItem(ArtifactModel):
-    """A single content opportunity candidate."""
+    """A single content opportunity candidate.
+
+    Opportunities describe ORIGINAL coverage angles for the audience — they
+    never rewrite or imitate competitor videos.
+    """
 
     title: str = Field(min_length=1)
     topic: str = Field(min_length=1)
     score: float = Field(ge=0.0, le=100.0)
     rationale: str = Field(min_length=1)
     content_gap: str | None = None
+    #: Stable, deterministic id (Phase 1 extension).
+    opportunity_id: str = Field(default_factory=lambda: uuid4().hex, max_length=64)
+    #: The audience problem / question this opportunity answers.
+    audience_question: str | None = Field(default=None, max_length=500)
+    #: Evidence references (analysis patterns / video ids).
+    evidence_refs: list[str] = Field(default_factory=list)
+    #: Videos supporting the demand signal.
+    supporting_video_ids: list[str] = Field(default_factory=list)
+    #: Demand signals (frequency, views, velocity).
+    demand_signals: dict[str, Any] = Field(default_factory=dict)
+    #: Competition / saturation signals.
+    competition_signals: dict[str, Any] = Field(default_factory=dict)
+    #: Why this is novel / underserved.
+    novelty_rationale: str | None = Field(default=None, max_length=1000)
+    #: Confidence in the opportunity, 0..1 (evidence-volume based).
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    #: Recommended original angle.
+    recommended_angle: str | None = Field(default=None, max_length=1000)
+
+
+class TopicClusterSummary(ArtifactModel):
+    """A deterministic topic cluster summary (Phase 1 extension)."""
+
+    cluster_id: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=200)
+    video_count: int = Field(default=0, ge=0)
+    total_views: int = Field(default=0, ge=0)
+    average_views: float = Field(default=0.0, ge=0.0)
+    #: underserved | balanced | saturated
+    saturation: str = Field(default="balanced", max_length=32)
+    representative_video_ids: list[str] = Field(default_factory=list)
 
 
 class OpportunityList(ArtifactModel):
@@ -135,6 +247,10 @@ class OpportunityList(ArtifactModel):
     project_id: str = Field(min_length=1)
     generated_at: datetime = Field(default_factory=_utcnow)
     opportunities: list[OpportunityItem] = Field(default_factory=list)
+    #: The analysis artifact this list was derived from.
+    source_artifact_id: str | None = Field(default=None, max_length=64)
+    #: Deterministic topic clusters the opportunities were derived from.
+    clusters: list[TopicClusterSummary] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

@@ -19,8 +19,8 @@ class JobType(StrEnum):
     parallel ones.
     """
 
-    DISCOVERY = "discovery"  # DISCOVERY_JOB
-    ANALYSIS = "analysis"  # ANALYSIS_JOB
+    YOUTUBE_DISCOVERY = "youtube_discovery"  # DISCOVERY_JOB
+    MARKET_ANALYSIS = "market_analysis"  # ANALYSIS_JOB
     OPPORTUNITY_DETECTION = "opportunity_detection"
     RESEARCH = "research"  # RESEARCH_JOB
     CONTENT_BRIEF = "content_brief"
@@ -96,7 +96,7 @@ class JobRecord(BaseModel):
     @classmethod
     def discovery(cls, project_id: str, **kwargs: Any) -> JobRecord:
         """Convenience constructor for a DISCOVERY_JOB record."""
-        return cls(type=JobType.DISCOVERY, project_id=project_id, **kwargs)
+        return cls(type=JobType.YOUTUBE_DISCOVERY, project_id=project_id, **kwargs)
 
     @classmethod
     def render(cls, project_id: str, **kwargs: Any) -> JobRecord:

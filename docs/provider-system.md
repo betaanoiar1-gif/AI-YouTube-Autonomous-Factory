@@ -16,17 +16,20 @@ provider replacement without rewriting business logic.
 | `ImageProvider` | image generation | contract only |
 | `VideoProvider` | video rendering | contract only |
 | `TTSProvider` | text-to-speech | contract only |
-| `DiscoveryProvider` | YouTube discovery/metrics with quota visibility | contract only (Phase 1) |
+| `DiscoveryProvider` | YouTube discovery/metrics with quota visibility | **implemented: `YouTubeDiscoveryProvider`** (YouTube Data API v3) |
 
 Unimplemented providers are **contracts, not fakes**: calling them raises
 `NotImplementedError` with a pointer to the phase that implements them. No
 pretend implementations exist.
 
-`DiscoveryProvider` is the boundary for YouTube data access. Its contract
-requires documented/authorized API access (YouTube Data API v3), respect for
-quotas and rate limits, and observable quota consumption (`quota_used()`).
-Scraping, undocumented endpoints, proxy tricks, and quota evasion are
-explicitly out of scope for this project.
+`DiscoveryProvider` is the boundary for YouTube data access; the Phase 1
+implementation (`YouTubeDiscoveryProvider`) uses the documented YouTube
+Data API v3 only (`search`/`videos`/`channels`, API-key auth), respects
+quotas (documented unit costs + a per-run budget enforced before calls),
+and exposes observable quota consumption (`quota_used()` + per-call usage
+records with quota metadata). Scraping, undocumented endpoints, proxy tricks,
+and quota evasion are explicitly out of scope for this project. See
+`docs/intelligence-plane.md` and `docs/decisions/ADR-0010`.
 
 ## Normalized AI request model
 

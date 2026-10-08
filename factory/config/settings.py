@@ -17,6 +17,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from factory.config.provider_config import get_cleanapis_settings
+from factory.config.youtube_config import get_youtube_settings, reset_youtube_settings_cache
 from factory.errors import ConfigurationError
 from factory.security.redaction import register_secret
 
@@ -102,6 +103,7 @@ def reset_settings_caches() -> None:
     """Clear cached settings. Intended for tests."""
     get_app_settings.cache_clear()
     get_cleanapis_settings.cache_clear()
+    reset_youtube_settings_cache()
 
 
 def register_runtime_secrets() -> None:
@@ -113,6 +115,9 @@ def register_runtime_secrets() -> None:
     cleanapis = get_cleanapis_settings()
     if cleanapis.cleanapis_API_KEY:
         register_secret(cleanapis.cleanapis_API_KEY)
+    youtube = get_youtube_settings()
+    if youtube.youtube_API_KEY:
+        register_secret(youtube.youtube_API_KEY)
 
 
 __all__ = [
