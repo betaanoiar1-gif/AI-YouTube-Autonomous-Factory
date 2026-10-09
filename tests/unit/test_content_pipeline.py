@@ -126,9 +126,9 @@ def test_content_job_creates_traceable_brief_and_narrative_outline(
     assert result.output_artifact_id
     _outline_record, outline_payload = artifact_store.load(result.output_artifact_id)
     assert _outline_record.type == ArtifactType.NARRATIVE_OUTLINE.value
-    Draft202012Validator(
-        load_json_schema(ArtifactType.NARRATIVE_OUTLINE, SCHEMAS_DIR)
-    ).validate(outline_payload)
+    Draft202012Validator(load_json_schema(ArtifactType.NARRATIVE_OUTLINE, SCHEMAS_DIR)).validate(
+        outline_payload
+    )
     assert [beat["beat_type"] for beat in outline_payload["beats"]] == [
         "hook",
         "setup",
@@ -142,9 +142,9 @@ def test_content_job_creates_traceable_brief_and_narrative_outline(
     _brief_record, brief_payload = artifact_store.load_latest(
         "proj-1", ArtifactType.CONTENT_BRIEF, lineage_key=job.id
     )
-    Draft202012Validator(
-        load_json_schema(ArtifactType.CONTENT_BRIEF, SCHEMAS_DIR)
-    ).validate(brief_payload)
+    Draft202012Validator(load_json_schema(ArtifactType.CONTENT_BRIEF, SCHEMAS_DIR)).validate(
+        brief_payload
+    )
     assert brief_payload["opportunity_id"] == "opp-1"
     assert brief_payload["research_report_id"] == report_id
     assert brief_payload["evidence_backed_points"][0]["claim_refs"] == ["claim-supported"]
