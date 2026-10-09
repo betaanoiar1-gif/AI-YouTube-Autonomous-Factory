@@ -1,4 +1,5 @@
 """Phase 3A content-plane integration tests using only local artifacts."""
+
 from __future__ import annotations
 
 from factory.content.pipeline import build_default_content_pipeline
@@ -34,9 +35,7 @@ def _inputs(artifact_store, *, report_opportunity_id: str = "opp-1") -> tuple[st
             )
         ],
     )
-    opportunity_record = artifact_store.save(
-        ArtifactType.OPPORTUNITY_LIST, "proj-1", opportunities
-    )
+    opportunity_record = artifact_store.save(ArtifactType.OPPORTUNITY_LIST, "proj-1", opportunities)
     report = ResearchReport(
         research_report_id="research-job-1",
         project_id="proj-1",
@@ -119,7 +118,12 @@ def test_content_job_creates_traceable_brief_and_narrative_outline(
     _outline_record, outline_payload = artifact_store.load(result.output_artifact_id)
     assert _outline_record.type == ArtifactType.NARRATIVE_OUTLINE.value
     assert [beat["beat_type"] for beat in outline_payload["beats"]] == [
-        "hook", "setup", "escalation", "turning_point", "resolution", "final_insight"
+        "hook",
+        "setup",
+        "escalation",
+        "turning_point",
+        "resolution",
+        "final_insight",
     ]
     assert report_id in outline_payload["source_artifact_ids"]
 
@@ -133,12 +137,14 @@ def test_content_job_creates_traceable_brief_and_narrative_outline(
     assert brief_payload["evidence_backed_points"][0]["source_urls"] == [
         "https://example.org/history"
     ]
-    assert "An uncertain claim that must not be narrated as fact." in brief_payload[
-        "unresolved_claims_to_avoid"
-    ]
-    assert "The exact construction date remains unresolved." in brief_payload[
-        "unresolved_claims_to_avoid"
-    ]
+    assert (
+        "An uncertain claim that must not be narrated as fact."
+        in brief_payload["unresolved_claims_to_avoid"]
+    )
+    assert (
+        "The exact construction date remains unresolved."
+        in brief_payload["unresolved_claims_to_avoid"]
+    )
 
 
 def test_content_job_rejects_report_for_another_opportunity(artifact_store, projects) -> None:
