@@ -82,6 +82,10 @@ system as handlers (`IntelligencePipeline.handlers`):
 * `OPPORTUNITY_DETECTION` → `OpportunityEngine` — loads the analysis artifact
   + deterministic clustering → `opportunity_list` artifact.
 
+Phase 3A adds the deterministic content pipeline (`factory/content/pipeline.py`):
+
+* `CONTENT_BRIEF` → loads the selected opportunity and its matching `research_report`, saves an evidence-traceable `content_brief`, then a `narrative_outline`. It uses the existing artifact store and resumable job context, performs no network calls, and requires no credentials. The job's output artifact is the narrative outline; both artifacts share the job lineage.
+
 Phase 2 adds the research pipeline (`factory/research/pipeline.py`):
 
 * `RESEARCH` → `ResearchEngine` — loads the `opportunity_list` artifact and
