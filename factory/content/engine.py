@@ -3,6 +3,7 @@
 Only verified research claims become factual key points. Unverified and
 contested claims are explicitly excluded from factual narration.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -56,8 +57,11 @@ class ContentEngine:
         requested_id = payload.get("opportunity_id")
         if requested_id:
             opportunity = next(
-                (item for item in opportunity_list.opportunities
-                 if item.opportunity_id == requested_id),
+                (
+                    item
+                    for item in opportunity_list.opportunities
+                    if item.opportunity_id == requested_id
+                ),
                 None,
             )
         else:
@@ -74,9 +78,7 @@ class ContentEngine:
             report_record, report_payload = self._artifacts.load_latest(
                 project_id, ArtifactType.RESEARCH_REPORT
             )
-        normalized_report = validate_artifact_payload(
-            ArtifactType.RESEARCH_REPORT, report_payload
-        )
+        normalized_report = validate_artifact_payload(ArtifactType.RESEARCH_REPORT, report_payload)
         report = ResearchReport.model_validate(normalized_report)
         if report.opportunity_id != opportunity.opportunity_id:
             raise ValueError("research report does not belong to the selected opportunity")
@@ -89,9 +91,7 @@ class ContentEngine:
         outline_id = _stable_id(
             "outline", project_id, opportunity.opportunity_id, report.research_report_id
         )
-        source_artifact_ids = list(
-            dict.fromkeys([opportunity_list_id, report_record.id])
-        )
+        source_artifact_ids = list(dict.fromkeys([opportunity_list_id, report_record.id]))
         points = self._evidence_backed_points(report)
         unresolved = self._unresolved_claims(report)
 
@@ -127,9 +127,7 @@ class ContentEngine:
             key_points=[point.claim for point in points],
             evidence_backed_points=points,
             content_gaps_addressed=[
-                value
-                for value in [opportunity.content_gap, opportunity.novelty_rationale]
-                if value
+                value for value in [opportunity.content_gap, opportunity.novelty_rationale] if value
             ],
             unresolved_claims_to_avoid=unresolved,
             intended_tone=str(payload.get("intended_tone") or "cinematic documentary"),
