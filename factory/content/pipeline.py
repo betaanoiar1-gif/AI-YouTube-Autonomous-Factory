@@ -1,4 +1,5 @@
 """Phase 3A content pipeline wiring."""
+
 from __future__ import annotations
 
 from typing import Any
