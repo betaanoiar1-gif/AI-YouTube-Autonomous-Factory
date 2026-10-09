@@ -37,91 +37,88 @@ class ContentEngine:
         self._artifacts = artifact_store
 
     def run(self, job: JobRecord, context: JobContext) -> str:
+        """Save the content brief and outline; return the outline artifact id."""
         project_id = job.project_id or ""
         if not project_id:
             raise ValueError("content brief job requires a project_id")
+
         payload = job.payload or {}
         checkpoint: dict[str, Any] = dict(context.checkpoint or {})
         opportunity_list_id = payload.get("opportunity_list_artifact_id") or job.input_artifact_id
         if not isinstance(opportunity_list_id, str) or not opportunity_list_id:
             raise ValueError("content brief job requires opportunity_list_artifact_id")
-        _op_record, opportunity_payload = self._artifacts.load(opportunity_list_id)
-        opportunity_list = OpportunityList.model_validate(
-            validate_artifact_payload(ArtifactType.OPPORTUNITY_LIST, opportunity_payload)
+
+        _, opportunity_payload = self._artifacts.load(opportunity_list_id)
+        normalized_opportunities = validate_artifact_payload(
+            ArtifactType.OPPORTUNITY_LIST, opportunity_payload
         )
-        requested_opportunity_id = payload.get("opportunity_id")
-        opportunity = next(
-            (
-                item
-                for item in opportunity_list.opportunities
-                if item.opportunity_id == requested_opportunity_id
-            ),
-            None,
-        ) if requested_opportunity_id else (opportunity_list.opportunities[0] if opportunity_list.opportunities else None)
+        opportunity_list = OpportunityList.model_validate(normalized_opportunities)
+        requested_id = payload.get("opportunity_id")
+        if requested_id:
+            opportunity = next(
+                (item for item in opportunity_list.opportunities
+                 if item.opportunity_id == requested_id),
+                None,
+            )
+        else:
+            opportunity = (
+                opportunity_list.opportunities[0] if opportunity_list.opportunities else None
+            )
         if opportunity is None:
             raise ValueError("selected opportunity was not found in opportunity_list artifact")
 
-        report_id = payload.get("research_report_artifact_id")
-        if isinstance(report_id, str) and report_id:
-            _report_record, report_payload = self._artifacts.load(report_id)
+        requested_report_id = payload.get("research_report_artifact_id")
+        if isinstance(requested_report_id, str) and requested_report_id:
+            report_record, report_payload = self._artifacts.load(requested_report_id)
         else:
-            _report_record, report_payload = self._artifacts.load_latest(
+            report_record, report_payload = self._artifacts.load_latest(
                 project_id, ArtifactType.RESEARCH_REPORT
             )
-        report = ResearchReport.model_validate(
-            validate_artifact_payload(ArtifactType.RESEARCH_REPORT, report_payload)
+        normalized_report = validate_artifact_payload(
+            ArtifactType.RESEARCH_REPORT, report_payload
         )
+        report = ResearchReport.model_validate(normalized_report)
         if report.opportunity_id != opportunity.opportunity_id:
             raise ValueError("research report does not belong to the selected opportunity")
         if report.project_id and report.project_id != project_id:
             raise ValueError("research report belongs to a different project")
 
-        report_id = report.research_report_id
-        brief_id = _stable_id("brief", project_id, opportunity.opportunity_id, report_id)
-        outline_id = _stable_id("outline", project_id, opportunity.opportunity_id, report_id)
-        source_urls = {item.source_id: item.url for item in report.source_list}
-        source_urls.update({item.source_id: item.url for item in report.sources if item.source_id})
-        evidence_by_id = {item.evidence_id: item for item in report.evidence}
-        supported = [claim for claim in report.verified_claims if claim.verification_status.upper() in _SUPPORTED]
-        points: list[EvidenceBackedPoint] = []
-        for claim in supported:
-            evidence_refs = [ref for ref in claim.evidence_refs if ref in evidence_by_id]
-            source_ids = list(dict.fromkeys(
-                [*claim.supporting_source_ids, *(evidence_by_id[ref].source_id for ref in evidence_refs)]
-            ))
-            urls = list(dict.fromkeys(source_urls[sid] for sid in source_ids if sid in source_urls))
-            points.append(EvidenceBackedPoint(
-                claim=claim.statement,
-                claim_refs=[claim.claim_id],
-                evidence_refs=evidence_refs,
-                source_ids=source_ids,
-                source_urls=urls,
-            ))
+        brief_id = _stable_id(
+            "brief", project_id, opportunity.opportunity_id, report.research_report_id
+        )
+        outline_id = _stable_id(
+            "outline", project_id, opportunity.opportunity_id, report.research_report_id
+        )
+        source_artifact_ids = list(
+            dict.fromkeys([opportunity_list_id, report_record.id])
+        )
+        points = self._evidence_backed_points(report)
+        unresolved = self._unresolved_claims(report)
 
-        unresolved = list(report.unresolved_questions)
-        for claim in [*report.contested_claims, *report.verified_claims]:
-            if claim.verification_status.upper() not in _SUPPORTED:
-                unresolved.append(claim.statement)
-        unresolved.extend(item.description for item in report.contradiction_details)
-        unresolved = list(dict.fromkeys(unresolved))
-
-        audience = payload.get("target_audience") or "Curious viewers seeking a clear, evidence-led explanation"
-        question = opportunity.audience_question or report.research_question or f"What explains {opportunity.topic}?"
-        angle = opportunity.recommended_angle or opportunity.novelty_rationale or opportunity.content_gap or opportunity.rationale
-        title = opportunity.title
+        audience = payload.get("target_audience") or (
+            "Curious viewers seeking a clear, evidence-led explanation"
+        )
+        question = (
+            opportunity.audience_question
+            or report.research_question
+            or f"What explains {opportunity.topic}?"
+        )
+        angle = (
+            opportunity.recommended_angle
+            or opportunity.novelty_rationale
+            or opportunity.content_gap
+            or opportunity.rationale
+        )
         duration = payload.get("estimated_duration_seconds", 600)
         if not isinstance(duration, int) or isinstance(duration, bool) or duration < 0:
             raise ValueError("estimated_duration_seconds must be a non-negative integer")
-        source_artifact_ids = list(dict.fromkeys([
-            opportunity_list_id,
-            str(payload.get("research_report_artifact_id") or _report_record.id),
-        ]))
+
         brief = ContentBrief(
             brief_id=brief_id,
             opportunity_id=opportunity.opportunity_id,
             project_id=project_id,
-            research_report_id=str(payload.get("research_report_artifact_id") or _report_record.id),
-            title=title,
+            research_report_id=report_record.id,
+            title=opportunity.title,
             angle=angle,
             target_audience=audience,
             central_promise=question,
@@ -129,7 +126,11 @@ class ContentEngine:
             originality_angle=angle,
             key_points=[point.claim for point in points],
             evidence_backed_points=points,
-            content_gaps_addressed=[v for v in [opportunity.content_gap, opportunity.novelty_rationale] if v],
+            content_gaps_addressed=[
+                value
+                for value in [opportunity.content_gap, opportunity.novelty_rationale]
+                if value
+            ],
             unresolved_claims_to_avoid=unresolved,
             intended_tone=str(payload.get("intended_tone") or "cinematic documentary"),
             content_constraints=[
@@ -141,62 +142,179 @@ class ContentEngine:
             source_artifact_ids=source_artifact_ids,
             estimated_duration_seconds=duration,
         )
+
         brief_artifact_id = checkpoint.get("brief_artifact_id")
         if not brief_artifact_id:
             brief_record = self._artifacts.save(
-                ArtifactType.CONTENT_BRIEF, project_id, brief, job_id=job.id,
-                metadata={"job_type": job.type.value, "opportunity_id": opportunity.opportunity_id,
-                          "research_report_artifact_id": source_artifact_ids[1]},
+                ArtifactType.CONTENT_BRIEF,
+                project_id,
+                brief,
+                job_id=job.id,
+                metadata={
+                    "job_type": job.type.value,
+                    "opportunity_id": opportunity.opportunity_id,
+                    "research_report_artifact_id": report_record.id,
+                },
             )
             brief_artifact_id = brief_record.id
             context.set_progress(45)
-            context.save_checkpoint({
-                "stage": "OUTLINE", "brief_artifact_id": brief_artifact_id,
-                "brief_id": brief_id, "outline_id": outline_id,
-                "opportunity_list_artifact_id": opportunity_list_id,
-                "research_report_artifact_id": source_artifact_ids[1],
-            })
+            context.save_checkpoint(
+                {
+                    "stage": "OUTLINE",
+                    "brief_artifact_id": brief_artifact_id,
+                    "brief_id": brief_id,
+                    "outline_id": outline_id,
+                    "opportunity_list_artifact_id": opportunity_list_id,
+                    "research_report_artifact_id": report_record.id,
+                }
+            )
 
-        beats = [
-            NarrativeBeat(beat_id=f"{outline_id}-hook", index=0, beat_type="hook",
-                          title="The central puzzle", purpose=question),
-            NarrativeBeat(beat_id=f"{outline_id}-setup", index=1, beat_type="setup",
-                          title="What is known", purpose="Establish only the context supported by the research.",
-                          claim_refs=[p.claim_refs[0] for p in points[:2]],
-                          evidence_refs=[e for p in points[:2] for e in p.evidence_refs]),
-            NarrativeBeat(beat_id=f"{outline_id}-escalation", index=2, beat_type="escalation",
-                          title="Follow the evidence", purpose="Build the explanation from the strongest supported points.",
-                          claim_refs=[p.claim_refs[0] for p in points[2:5]],
-                          evidence_refs=[e for p in points[2:5] for e in p.evidence_refs]),
-            NarrativeBeat(beat_id=f"{outline_id}-turn", index=3, beat_type="turning_point",
-                          title="The crucial finding", purpose="Reveal the most consequential supported finding without overstating certainty.",
-                          claim_refs=[points[0].claim_refs[0]] if points else [],
-                          evidence_refs=points[0].evidence_refs if points else []),
-            NarrativeBeat(beat_id=f"{outline_id}-resolution", index=4, beat_type="resolution",
-                          title="What the evidence can establish", purpose="Resolve the audience question as far as the sources allow; state remaining uncertainty.",
-                          claim_refs=[p.claim_refs[0] for p in points],
-                          evidence_refs=[e for p in points for e in p.evidence_refs]),
-            NarrativeBeat(beat_id=f"{outline_id}-insight", index=5, beat_type="final_insight",
-                          title="Why it matters", purpose=f"Return to the original question: {question}"),
-        ]
         outline = NarrativeOutline(
-            outline_id=outline_id, brief_id=brief_id, opportunity_id=opportunity.opportunity_id,
-            project_id=project_id, title=title, beats=beats,
-            estimated_duration_seconds=duration, source_artifact_ids=[*source_artifact_ids, str(brief_artifact_id)],
+            outline_id=outline_id,
+            brief_id=brief_id,
+            opportunity_id=opportunity.opportunity_id,
+            project_id=project_id,
+            title=opportunity.title,
+            beats=self._narrative_beats(outline_id, question, points),
+            estimated_duration_seconds=duration,
+            source_artifact_ids=[*source_artifact_ids, str(brief_artifact_id)],
         )
         outline_artifact_id = checkpoint.get("outline_artifact_id")
         if not outline_artifact_id:
             outline_record = self._artifacts.save(
-                ArtifactType.NARRATIVE_OUTLINE, project_id, outline, job_id=job.id,
-                metadata={"job_type": job.type.value, "opportunity_id": opportunity.opportunity_id,
-                          "brief_artifact_id": str(brief_artifact_id)},
+                ArtifactType.NARRATIVE_OUTLINE,
+                project_id,
+                outline,
+                job_id=job.id,
+                metadata={
+                    "job_type": job.type.value,
+                    "opportunity_id": opportunity.opportunity_id,
+                    "brief_artifact_id": str(brief_artifact_id),
+                },
             )
             outline_artifact_id = outline_record.id
+            context.save_checkpoint(
+                {
+                    "stage": "DONE",
+                    "brief_artifact_id": str(brief_artifact_id),
+                    "outline_artifact_id": outline_artifact_id,
+                    "brief_id": brief_id,
+                    "outline_id": outline_id,
+                    "opportunity_list_artifact_id": opportunity_list_id,
+                    "research_report_artifact_id": report_record.id,
+                }
+            )
+
         context.set_progress(100)
-        context.save_checkpoint({
-            "stage": "DONE", "brief_artifact_id": str(brief_artifact_id),
-            "outline_artifact_id": str(outline_artifact_id), "brief_id": brief_id, "outline_id": outline_id,
-            "opportunity_list_artifact_id": opportunity_list_id,
-            "research_report_artifact_id": source_artifact_ids[1],
-        })
         return str(outline_artifact_id)
+
+    @staticmethod
+    def _evidence_backed_points(report: ResearchReport) -> list[EvidenceBackedPoint]:
+        source_urls = {source.source_id: source.url for source in report.source_list}
+        source_urls.update(
+            {source.source_id: source.url for source in report.sources if source.source_id}
+        )
+        evidence_by_id = {item.evidence_id: item for item in report.evidence}
+        points: list[EvidenceBackedPoint] = []
+        for claim in report.verified_claims:
+            if claim.verification_status.upper() not in _SUPPORTED:
+                continue
+            evidence_refs = [ref for ref in claim.evidence_refs if ref in evidence_by_id]
+            source_ids = list(
+                dict.fromkeys(
+                    [
+                        *claim.supporting_source_ids,
+                        *(evidence_by_id[ref].source_id for ref in evidence_refs),
+                    ]
+                )
+            )
+            urls = list(dict.fromkeys(url for sid in source_ids if (url := source_urls.get(sid))))
+            points.append(
+                EvidenceBackedPoint(
+                    claim=claim.statement,
+                    claim_refs=[claim.claim_id],
+                    evidence_refs=evidence_refs,
+                    source_ids=source_ids,
+                    source_urls=urls,
+                )
+            )
+        return points
+
+    @staticmethod
+    def _unresolved_claims(report: ResearchReport) -> list[str]:
+        unresolved = list(report.unresolved_questions)
+        for claim in [*report.contested_claims, *report.verified_claims]:
+            if claim.verification_status.upper() not in _SUPPORTED:
+                unresolved.append(claim.statement)
+        unresolved.extend(item.description for item in report.contradiction_details)
+        return list(dict.fromkeys(unresolved))
+
+    @staticmethod
+    def _narrative_beats(
+        outline_id: str, question: str, points: list[EvidenceBackedPoint]
+    ) -> list[NarrativeBeat]:
+        def claim_refs(start: int, end: int | None = None) -> list[str]:
+            selected = points[start:end]
+            return [point.claim_refs[0] for point in selected]
+
+        def evidence_refs(start: int, end: int | None = None) -> list[str]:
+            selected = points[start:end]
+            return list(dict.fromkeys(ref for point in selected for ref in point.evidence_refs))
+
+        return [
+            NarrativeBeat(
+                beat_id=f"{outline_id}-hook",
+                index=0,
+                beat_type="hook",
+                title="The central puzzle",
+                purpose=question,
+            ),
+            NarrativeBeat(
+                beat_id=f"{outline_id}-setup",
+                index=1,
+                beat_type="setup",
+                title="What is known",
+                purpose="Establish only the context supported by the research.",
+                claim_refs=claim_refs(0, 2),
+                evidence_refs=evidence_refs(0, 2),
+            ),
+            NarrativeBeat(
+                beat_id=f"{outline_id}-escalation",
+                index=2,
+                beat_type="escalation",
+                title="Follow the evidence",
+                purpose="Build the explanation from the strongest supported points.",
+                claim_refs=claim_refs(2, 5),
+                evidence_refs=evidence_refs(2, 5),
+            ),
+            NarrativeBeat(
+                beat_id=f"{outline_id}-turn",
+                index=3,
+                beat_type="turning_point",
+                title="The crucial finding",
+                purpose=(
+                    "Reveal the most consequential supported finding without overstating certainty."
+                ),
+                claim_refs=claim_refs(0, 1),
+                evidence_refs=evidence_refs(0, 1),
+            ),
+            NarrativeBeat(
+                beat_id=f"{outline_id}-resolution",
+                index=4,
+                beat_type="resolution",
+                title="What the evidence can establish",
+                purpose=(
+                    "Resolve the audience question as far as the sources allow; "
+                    "state remaining uncertainty."
+                ),
+                claim_refs=claim_refs(0),
+                evidence_refs=evidence_refs(0),
+            ),
+            NarrativeBeat(
+                beat_id=f"{outline_id}-insight",
+                index=5,
+                beat_type="final_insight",
+                title="Why it matters",
+                purpose=f"Return to the original question: {question}",
+            ),
+        ]
