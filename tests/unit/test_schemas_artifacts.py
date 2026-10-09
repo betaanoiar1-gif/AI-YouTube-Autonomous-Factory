@@ -87,6 +87,23 @@ VALID_SAMPLES: dict[ArtifactType, dict] = {
         "content_gaps_addressed": ["g1"],
         "estimated_duration_seconds": 600,
     },
+    ArtifactType.NARRATIVE_OUTLINE: {
+        "outline_id": "outline-1",
+        "brief_id": "brief-1",
+        "opportunity_id": "opp-1",
+        "title": "Ancient Aqueducts",
+        "beats": [
+            {
+                "beat_id": "hook-1",
+                "index": 0,
+                "beat_type": "hook",
+                "title": "The central puzzle",
+                "purpose": "What made this system work?",
+            }
+        ],
+        "estimated_duration_seconds": 600,
+        "source_artifact_ids": ["opp-artifact", "research-artifact", "brief-artifact"],
+    },
     ArtifactType.SCRIPT: {
         "script_id": "s1",
         "title": "Script title",
