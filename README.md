@@ -124,6 +124,8 @@ make serve            # http://localhost:8080/health
 | `docs/phase-1-final-report.md` | **Phase 1 final report** (simulated vs real YouTube API status) |
 | `docs/research-plane.md` | **Phase 2**: research pipeline, source/evidence/claim models, verification, SSRF security model |
 | `docs/phase-2-final-report.md` | **Phase 2 final report** (simulated vs real connectivity status) |
+| `docs/content-plane.md` | **Phase 3A**: content brief, evidence traceability, narrative outline and CLI usage |
+| `docs/phase-3a-final-report.md` | **Phase 3A final report** (implementation and GitHub Actions quality gates) |
 | `docs/decisions/` | Architecture Decision Records (ADR-0001 … ADR-0009) |
 
 ## Security rules (always in force)
