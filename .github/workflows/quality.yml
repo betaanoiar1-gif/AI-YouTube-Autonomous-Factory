@@ -32,6 +32,15 @@ jobs:
         run: python -m ruff format --check .
       - name: Mypy
         run: python -m mypy factory tests
+      - name: High-confidence repository-wide secret pattern scan
+        shell: bash
+        run: |
+          if git grep -nE 'AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}|sk_live_[A-Za-z0-9]{24,}|rk_live_[A-Za-z0-9]{24,}|-----BEGIN (RSA|EC|OPENSSH|DSA) PRIVATE KEY-----' -- .; then
+            echo "Potential credential pattern detected; inspect matches before proceeding."
+            exit 1
+          else
+            echo "No high-confidence token or private-key patterns detected."
+          fi
       - name: Apply migrations to a fresh SQLite database
         env:
           DATABASE_URL: sqlite:///./quality-gates.db
