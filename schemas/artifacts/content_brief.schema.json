@@ -16,7 +16,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "pattern": "^\\\\d+\\\\.\\\\d+\\\\.\\\\d+$",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
       "default": "1.0.0"
     },
     "brief_id": {
@@ -134,7 +134,7 @@
       "properties": {
         "schema_version": {
           "type": "string",
-          "pattern": "^\\\\d+\\\\.\\\\d+\\\\.\\\\d+$",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
           "default": "1.0.0"
         },
         "claim": {
