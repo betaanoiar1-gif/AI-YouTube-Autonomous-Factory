@@ -42,7 +42,10 @@ class _TestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/pdf")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                return
             return
         if self.path == "/big":
             body = b"x" * 100_000
@@ -67,7 +70,10 @@ class _TestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
 
 @pytest.fixture(scope="module")
@@ -78,6 +84,7 @@ def local_server():
     yield f"http://127.0.0.1:{server.server_address[1]}"
     server.shutdown()
     server.server_close()
+    thread.join(timeout=2.0)
 
 
 class TestBlockedIPs:
