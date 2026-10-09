@@ -190,7 +190,7 @@ def test_content_job_resumes_after_brief_checkpoint_without_duplicate_brief(
 ) -> None:
     opportunity_id, report_id = _inputs(artifact_store)
     pipeline = build_default_content_pipeline(artifact_store=artifact_store)
-    service = JobService(projects)
+    service = JobService(projects, retry_base_seconds=0, retry_max_seconds=0)
     job = service.enqueue(
         JobType.CONTENT_BRIEF,
         project_id="proj-1",
