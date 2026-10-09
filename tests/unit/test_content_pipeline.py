@@ -28,7 +28,9 @@ def _inputs(artifact_store, *, report_opportunity_id: str = "opp-1") -> tuple[st
                 rationale="An underserved explanatory angle.",
                 audience_question="How did ancient aqueducts move water across difficult terrain?",
                 content_gap="Explain the engineering trade-offs with source-backed examples.",
-                recommended_angle="Follow the engineering problem rather than retelling a competitor video.",
+                recommended_angle=(
+                    "Follow the engineering problem rather than retelling a competitor video."
+                ),
             )
         ],
     )
@@ -42,7 +44,11 @@ def _inputs(artifact_store, *, report_opportunity_id: str = "opp-1") -> tuple[st
         topic="ancient aqueducts",
         summary="Research report with one supported and one unresolved claim.",
         sources=[
-            {"source_id": "src-1", "url": "https://example.org/history", "title": "History reference"}
+            {
+                "source_id": "src-1",
+                "url": "https://example.org/history",
+                "title": "History reference",
+            }
         ],
         source_list=[
             SourceItem(
