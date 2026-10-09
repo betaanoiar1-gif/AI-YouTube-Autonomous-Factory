@@ -489,7 +489,9 @@ class NarrativeBeat(ArtifactModel):
 
     beat_id: str = Field(min_length=1, max_length=64)
     index: int = Field(ge=0)
-    beat_type: Literal["hook", "setup", "escalation", "turning_point", "resolution", "final_insight"]
+    beat_type: Literal[
+        "hook", "setup", "escalation", "turning_point", "resolution", "final_insight"
+    ]
     title: str = Field(min_length=1, max_length=200)
     purpose: str = Field(min_length=1, max_length=1000)
     claim_refs: list[str] = Field(default_factory=list)
