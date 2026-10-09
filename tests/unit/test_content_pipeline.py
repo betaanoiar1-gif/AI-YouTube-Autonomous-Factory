@@ -69,7 +69,9 @@ def _inputs(artifact_store, *, report_opportunity_id: str = "opp-1") -> tuple[st
                 statement="The aqueduct used a carefully graded channel.",
                 verification_status="SUPPORTED",
                 confidence=0.9,
-                evidence_refs=["ev-1"],
+                # Phase 2 currently populates this field with source ids; Phase 3A
+                # must normalize them to concrete evidence ids.
+                evidence_refs=["src-1"],
                 supporting_source_ids=["src-1"],
             ),
             VerifiedClaim(
