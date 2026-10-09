@@ -150,8 +150,9 @@ def _cmd_serve(args: argparse.Namespace) -> int:
 
 
 def _build_pipeline() -> tuple[Any, Any]:
-    """Build the production pipeline (intelligence + research, DB-backed wiring)."""
+    """Build the production pipeline (intelligence + research + content)."""
     from factory.config.settings import get_app_settings, register_runtime_secrets
+    from factory.content.pipeline import build_default_content_pipeline
     from factory.intelligence.pipeline import build_default_pipeline
     from factory.research.pipeline import build_default_research_pipeline
     from factory.storage.artifacts import ArtifactStore
@@ -168,14 +169,17 @@ def _build_pipeline() -> tuple[Any, Any]:
     research = build_default_research_pipeline(
         session_factory=session_factory, artifact_store=artifact_store
     )
-    return _PipelineFacade(intelligence, research), session_factory
+    content = build_default_content_pipeline(artifact_store=artifact_store)
+    return _PipelineFacade(intelligence, research, content), session_factory
 
 
 class _PipelineFacade:
     """Runs pipeline jobs through the merged intelligence + research handlers."""
 
-    def __init__(self, intelligence: Any, research: Any) -> None:
+    def __init__(self, intelligence: Any, research: Any, content: Any | None = None) -> None:
         self.handlers = {**intelligence.handlers, **research.handlers}
+        if content is not None:
+            self.handlers.update(content.handlers)
 
     def run_job(self, service: Any, job_id: str) -> Any:
         from factory.jobs.runner import run_job
@@ -322,6 +326,7 @@ def build_parser() -> argparse.ArgumentParser:
             "market_analysis",
             "opportunity_detection",
             "research",
+            "content_brief",
         ],
     )
     run_parser.add_argument("--project-id", required=True)
