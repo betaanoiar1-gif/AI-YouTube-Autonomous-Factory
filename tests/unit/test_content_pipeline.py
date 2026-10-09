@@ -150,5 +150,7 @@ def test_content_job_rejects_report_for_another_opportunity(artifact_store, proj
 
     result = pipeline.run_job(service, job.id)
 
-    assert result.status == JobStatus.FAILED
+    # The shared job runner schedules retryable failures before exhausting retries.
+    assert result.status == JobStatus.PENDING
+    assert result.error is not None
     assert result.output_artifact_id is None
