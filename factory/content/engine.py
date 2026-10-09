@@ -6,7 +6,6 @@ contested claims are explicitly excluded from factual narration.
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
 from typing import Any
 
 from factory.jobs.runner import JobContext
@@ -17,7 +16,6 @@ from factory.schemas.artifacts import (
     EvidenceBackedPoint,
     NarrativeBeat,
     NarrativeOutline,
-    OpportunityItem,
     OpportunityList,
     ResearchReport,
     validate_artifact_payload,
