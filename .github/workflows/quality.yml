@@ -1,0 +1,51 @@
+name: Quality gates
+
+on:
+  push:
+    branches:
+      - main
+      - arena/a87c5fb1-ai-youtube-autonomous-factory
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install project and development dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Full automated test suite (live tests excluded by project defaults)
+        run: python -m pytest
+      - name: Ruff lint
+        run: python -m ruff check .
+      - name: Ruff formatting
+        run: python -m ruff format --check .
+      - name: Mypy
+        run: python -m mypy factory tests
+      - name: High-confidence repository-wide secret pattern scan
+        shell: bash
+        run: |
+          if git grep -nE 'AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}|sk_live_[A-Za-z0-9]{24,}|rk_live_[A-Za-z0-9]{24,}|-----BEGIN (RSA|EC|OPENSSH|DSA) PRIVATE KEY-----' -- .; then
+            echo "Potential credential pattern detected; inspect matches before proceeding."
+            exit 1
+          else
+            echo "No high-confidence token or private-key patterns detected."
+          fi
+      - name: Apply migrations to a fresh SQLite database
+        env:
+          DATABASE_URL: sqlite:///./quality-gates.db
+        run: python -m alembic upgrade head
+      - name: Check migration drift
+        env:
+          DATABASE_URL: sqlite:///./quality-gates.db
+        run: python -m alembic check

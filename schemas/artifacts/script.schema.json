@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-youtube-autonomous-factory/schemas/artifacts/script.schema.json",
+  "title": "Script",
+  "description": "script -> script artifact: the original narration organized into scenes and shots.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "script_id",
+    "title"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
+    },
+    "script_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "brief_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16,
+      "default": "en"
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scene_id",
+          "index",
+          "narration"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "default": "1.0.0"
+          },
+          "scene_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "heading": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "narration": {
+            "type": "string",
+            "minLength": 1
+          },
+          "visual_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "shots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "shot_id",
+                "index",
+                "shot_type",
+                "description"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                  "default": "1.0.0"
+                },
+                "shot_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "shot_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "duration_seconds": {
+                  "type": "number",
+                  "minimum": 0,
+                  "default": 0
+                },
+                "asset_requirements": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "word_count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "total_duration_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    }
+  }
+}
