@@ -54,6 +54,7 @@ class ArtifactType(StrEnum):
     RESEARCH_CLAIM = "research_claim"
     RESEARCH_REPORT = "research_report"
     CONTENT_BRIEF = "content_brief"
+    NARRATIVE_OUTLINE = "narrative_outline"
     SCRIPT = "script"
     STORYBOARD = "storyboard"
     PRODUCTION_TIMELINE = "production_timeline"
@@ -449,8 +450,18 @@ class ResearchReport(ArtifactModel):
 # ---------------------------------------------------------------------------
 
 
+class EvidenceBackedPoint(ArtifactModel):
+    """A content point whose factual basis is traceable to research evidence."""
+
+    claim: str = Field(min_length=1, max_length=1000)
+    claim_refs: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
+    source_urls: list[str] = Field(default_factory=list)
+
+
 class ContentBrief(ArtifactModel):
-    """brief → content brief artifact."""
+    """Original content strategy derived from one opportunity and its research report."""
 
     brief_id: str = Field(min_length=1)
     opportunity_id: str = Field(min_length=1)
@@ -461,6 +472,42 @@ class ContentBrief(ArtifactModel):
     content_gaps_addressed: list[str] = Field(default_factory=list)
     estimated_duration_seconds: int = Field(ge=0)
     created_at: datetime = Field(default_factory=_utcnow)
+    project_id: str | None = Field(default=None, max_length=64)
+    research_report_id: str | None = Field(default=None, max_length=64)
+    central_promise: str | None = Field(default=None, max_length=1000)
+    audience_question: str | None = Field(default=None, max_length=500)
+    originality_angle: str | None = Field(default=None, max_length=1000)
+    evidence_backed_points: list[EvidenceBackedPoint] = Field(default_factory=list)
+    unresolved_claims_to_avoid: list[str] = Field(default_factory=list)
+    intended_tone: str = Field(default="cinematic documentary", min_length=1, max_length=128)
+    content_constraints: list[str] = Field(default_factory=list)
+    source_artifact_ids: list[str] = Field(default_factory=list)
+
+
+class NarrativeBeat(ArtifactModel):
+    """One narrative beat; factual statements must be linked to evidence."""
+
+    beat_id: str = Field(min_length=1, max_length=64)
+    index: int = Field(ge=0)
+    beat_type: Literal["hook", "setup", "escalation", "turning_point", "resolution", "final_insight"]
+    title: str = Field(min_length=1, max_length=200)
+    purpose: str = Field(min_length=1, max_length=1000)
+    claim_refs: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+
+
+class NarrativeOutline(ArtifactModel):
+    """Structured narrative arc; not a script and contains no invented factual claims."""
+
+    outline_id: str = Field(min_length=1, max_length=64)
+    brief_id: str = Field(min_length=1, max_length=64)
+    opportunity_id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1)
+    beats: list[NarrativeBeat] = Field(min_length=1)
+    estimated_duration_seconds: int = Field(ge=0)
+    created_at: datetime = Field(default_factory=_utcnow)
+    project_id: str | None = Field(default=None, max_length=64)
+    source_artifact_ids: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -681,6 +728,12 @@ ARTIFACT_CONTRACTS: dict[ArtifactType, ArtifactContract] = {
         ARTIFACT_SCHEMA_VERSION,
         ContentBrief,
         "content_brief.schema.json",
+    ),
+    ArtifactType.NARRATIVE_OUTLINE: ArtifactContract(
+        ArtifactType.NARRATIVE_OUTLINE,
+        ARTIFACT_SCHEMA_VERSION,
+        NarrativeOutline,
+        "narrative_outline.schema.json",
     ),
     ArtifactType.SCRIPT: ArtifactContract(
         ArtifactType.SCRIPT, ARTIFACT_SCHEMA_VERSION, Script, "script.schema.json"
