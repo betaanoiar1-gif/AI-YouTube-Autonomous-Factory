@@ -16,7 +16,7 @@ The product brief's typed jobs map onto one discriminator enum:
 | ANALYSIS_JOB | `MARKET_ANALYSIS` | `analysis_result` |
 | — | `OPPORTUNITY_DETECTION` | `opportunity_list` |
 | RESEARCH_JOB | `RESEARCH` | `research_report` |
-| — | `CONTENT_BRIEF` | `content_brief` |
+| — | `CONTENT_BRIEF` | `narrative_outline` (plus intermediate `content_brief`) |
 | SCRIPT_JOB | `SCRIPT` | `script` |
 | — | `VISUAL_PLAN` | `storyboard` |
 | — | `ASSET_ACQUISITION` | (assets) |
