@@ -68,8 +68,18 @@ python -m factory.cli pipeline run --job-type research --project-id proj-1 \
   --payload '{"opportunity_list_artifact_id": "<id>", "opportunity_id": "<id>"}'
 ```
 
-Not in Phases 0-2 (by design): script, visual, production, rendering, QA,
-publishing, dashboard, autonomous scheduling.
+**Phase 3A (content design) is implemented on the active development branch:** a deterministic, offline content job consumes an `opportunity_list` artifact and its matching `research_report`, writes an evidence-traceable `content_brief`, then writes a `narrative_outline` with hook, setup, escalation, turning point, resolution, and final insight. Unsupported and contested claims are kept out of factual key points and listed as unresolved. No API key or paid provider is required.
+
+```bash
+# Use existing artifact IDs; report must belong to the selected opportunity.
+python -m factory.cli pipeline run --job-type content_brief --project-id proj-1 \
+  --input-artifact-id <opportunity-list-artifact-id> \
+  --payload '{"opportunity_list_artifact_id":"<opportunity-list-artifact-id>","opportunity_id":"<opportunity-id>","research_report_artifact_id":"<research-report-artifact-id>"}'
+```
+
+The job output artifact is `narrative_outline`; the linked `content_brief` is stored as a separate immutable artifact in the same job lineage.
+
+Not yet implemented: full script generation, visual asset generation, production, rendering, QA, publishing, dashboard, autonomous scheduling.
 
 ## Quickstart
 
