@@ -215,20 +215,34 @@ class ContentEngine:
             {source.source_id: source.url for source in report.sources if source.source_id}
         )
         evidence_by_id = {item.evidence_id: item for item in report.evidence}
+        evidence_by_source: dict[str, list[Any]] = {}
+        for item in report.evidence:
+            evidence_by_source.setdefault(item.source_id, []).append(item)
         points: list[EvidenceBackedPoint] = []
         for claim in report.verified_claims:
             if claim.verification_status.upper() not in _SUPPORTED:
                 continue
-            evidence_refs = [ref for ref in claim.evidence_refs if ref in evidence_by_id]
+            linked_evidence: dict[str, Any] = {}
+            for ref in claim.evidence_refs:
+                if ref in evidence_by_id:
+                    linked_evidence[ref] = evidence_by_id[ref]
+                else:
+                    # Phase 2 currently emits source ids in VerifiedClaim.evidence_refs;
+                    # normalize those legacy references back to concrete evidence ids.
+                    for item in evidence_by_source.get(ref, []):
+                        linked_evidence[item.evidence_id] = item
+            evidence_refs = list(linked_evidence)
             source_ids = list(
                 dict.fromkeys(
                     [
                         *claim.supporting_source_ids,
-                        *(evidence_by_id[ref].source_id for ref in evidence_refs),
+                        *(item.source_id for item in linked_evidence.values()),
                     ]
                 )
             )
             urls = list(dict.fromkeys(url for sid in source_ids if (url := source_urls.get(sid))))
+            if not evidence_refs and not any(sid in source_urls for sid in source_ids):
+                continue
             points.append(
                 EvidenceBackedPoint(
                     claim=claim.statement,
